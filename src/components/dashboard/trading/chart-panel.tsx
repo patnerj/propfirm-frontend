@@ -323,20 +323,6 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
         )}
         <div ref={containerRef} className="absolute inset-0" />
 
-        {/* ── Execution-feed overlay ──────────────────────────────────────
-            Live execution levels (entry/SL/TP/PnL from the sim feed) for open
-            positions on this symbol. Anchored bottom-RIGHT so it never covers
-            TradingView's left-edge drawing toolbar. pointer-events-none lets
-            chart drag through; the card re-enables pointer events. */}
-        {ready && symPositions.length > 0 && (
-          <div className="absolute inset-0 z-[2] pointer-events-none">
-            <div className="absolute bottom-2 right-2 left-2 sm:left-auto sm:max-w-xs space-y-1.5 pointer-events-auto">
-              {symPositions.map((p) => (
-                <ExecLevelRow key={p.id} pos={p} digits={digits} />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Chart data disclosure + session-retention note */}
