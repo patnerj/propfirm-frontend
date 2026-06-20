@@ -220,7 +220,10 @@ function DesktopLayout({
             <ChartPanel positions={positions} />
           </section>
           <section className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col min-h-0">
-            <div className="shrink-0 flex items-center gap-1 px-3 pt-2 border-b border-border-subtle">
+            <div
+              className={`shrink-0 flex items-center gap-1 px-3 pt-2 border-b border-border-subtle ${posCollapsed ? 'cursor-pointer hover:bg-surface-muted transition-colors' : ''}`}
+              onClick={posCollapsed ? togglePos : undefined}
+            >
               <TabButton active={tab === 'positions'} onClick={() => setTab('positions')}>
                 Positions
                 {positions && positions.length > 0 && (
