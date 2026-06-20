@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowUpRight, BarChart3, Clock, ListOrdered, PanelLeftClose, PanelLeftOpen, ShoppingCart, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowUpRight, BarChart3, Clock, ListOrdered, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, ShoppingCart, CheckCircle2, XCircle } from 'lucide-react'
 
 import { api } from '@/lib/api'
 import { useTerminal } from '@/store/terminal'
@@ -147,6 +147,14 @@ function DesktopLayout({
   }
   // Collapsible market-watch pane — state remembered across sessions.
   const [mwCollapsed, setMwCollapsed] = useState(true)
+  const [otCollapsed, setOtCollapsed] = useState(false)
+  const toggleOt = () => {
+    setOtCollapsed((v) => {
+      const next = !v
+      try { localStorage.setItem('fxsim:term:ot', next ? '1' : '0') } catch { /* private mode */ }
+      return next
+    })
+  }
   useEffect(() => {
     // Always start collapsed on terminal open for maximum chart space
     setMwCollapsed(true)
@@ -171,7 +179,7 @@ function DesktopLayout({
           MarketWatch: 210px→260px, OrderTicket: 264px→320px across the viewport. */}
       <div
         className="flex-1 min-h-0 grid gap-3"
-        style={{ gridTemplateColumns: `${mwCollapsed ? '44px' : 'clamp(210px, 17vw, 260px)'} minmax(0,1fr) clamp(264px, 21vw, 320px)` }}
+        style={{ gridTemplateColumns: `${mwCollapsed ? '44px' : 'clamp(210px, 17vw, 260px)'} minmax(0,1fr) ${otCollapsed ? '44px' : 'clamp(264px, 21vw, 320px)'}` }}
       >
         {/* Left: market watch (collapsible) */}
         {mwCollapsed ? (
@@ -255,13 +263,37 @@ function DesktopLayout({
           </section>
         </div>
 
-        {/* Right: order ticket */}
-        <aside className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col min-h-0">
-          <div className="shrink-0 px-3 py-2.5 border-b border-border-subtle">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">New order</h3>
-          </div>
-          <OrderTicket account={account} />
-        </aside>
+        {/* Right: order ticket (collapsible) */}
+        {otCollapsed ? (
+          <aside className="rounded-lg border border-border bg-surface flex flex-col items-center pt-2">
+            <button
+              onClick={toggleOt}
+              className="h-8 w-8 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
+              aria-label="Show order ticket"
+              title="Show order ticket"
+            >
+              <PanelRightOpen className="h-4 w-4" />
+            </button>
+            <span className="mt-3 text-2xs font-semibold uppercase tracking-wider text-text-faint [writing-mode:vertical-rl]">
+              New order
+            </span>
+          </aside>
+        ) : (
+          <aside className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col min-h-0">
+            <div className="shrink-0 px-3 py-2.5 border-b border-border-subtle flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">New order</h3>
+              <button
+                onClick={toggleOt}
+                className="h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
+                aria-label="Hide order ticket"
+                title="Hide order ticket"
+              >
+                <PanelRightClose className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <OrderTicket account={account} />
+          </aside>
+        )}
       </div>
     </div>
   )
