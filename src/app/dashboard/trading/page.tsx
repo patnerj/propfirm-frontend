@@ -180,9 +180,10 @@ function DesktopLayout({
       >
         {/* Left: market watch (collapsible) */}
         {mwCollapsed ? (
-          <aside className="rounded-lg border border-border bg-surface flex flex-col items-center pt-2">
+          <aside onClick={toggleMw} className="rounded-lg border border-border bg-surface flex flex-col items-center pt-2 cursor-pointer hover:bg-surface-muted transition-colors">
             <button
-              onClick={toggleMw}
+              onClick={(e) => e.stopPropagation()}
+              onClickCapture={toggleMw}
               className="h-8 w-8 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
               aria-label="Show market watch"
               title="Show market watch"
@@ -282,9 +283,9 @@ function DesktopLayout({
 
         {/* Right: order ticket (collapsible) */}
         {otCollapsed ? (
-          <aside className="rounded-lg border border-border bg-surface flex flex-col items-center pt-2">
+          <aside onClick={toggleOt} className="rounded-lg border border-border bg-surface flex flex-col items-center pt-2 cursor-pointer hover:bg-surface-muted transition-colors">
             <button
-              onClick={toggleOt}
+              onClickCapture={toggleOt}
               className="h-8 w-8 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
               aria-label="Show order ticket"
               title="Show order ticket"
