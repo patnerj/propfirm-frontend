@@ -2,12 +2,12 @@
 
 import { memo, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler } from 'lucide-react'
+import { Maximize2, Minimize2, PencilRuler } from 'lucide-react'
 import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
 import { tvSymbol, tvInterval, symbolDigits, parseTvMap } from '@/lib/symbol-meta'
 import { useBranding } from '@/store/branding'
-import { fmtPrice, fmtUSD, toNum, pnlClass } from '@/lib/format'
+import { fmtPrice, toNum } from '@/lib/format'
 import type { Position } from '@/types/api'
 
 interface Props {
@@ -59,9 +59,6 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
   const metaRef = useRef(meta)
   useEffect(() => { metaRef.current = meta }, [meta])
   const tick    = usePrices((s) => s.prices[active])
-
-  // Open positions on the *active* symbol — drawn as execution-feed overlays.
-  const symPositions = (positions ?? []).filter((p) => p.symbol === active)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetRef    = useRef<unknown>(null)
@@ -335,30 +332,3 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
     </div>
   )
 })
-
-// Compact overlay card: one open position's live execution levels.
-// All values come from the sim execution feed (current_price / pnl), not the chart.
-function ExecLevelRow({ pos, digits }: { pos: Position; digits: number }) {
-  const isBuy = pos.type === 'buy'
-  const live  = toNum(pos.current_price)
-  const entry = toNum(pos.open_price)
-  const sl    = pos.sl != null && pos.sl !== '' ? toNum(pos.sl) : null
-  const tp    = pos.tp != null && pos.tp !== '' ? toNum(pos.tp) : null
-  const pnl   = toNum(pos.pnl) + toNum(pos.swap) - toNum(pos.commission)
-
-  return (
-    <div className="rounded-md bg-bg/80 backdrop-blur border border-border-subtle px-2.5 py-1.5 text-2xs shadow-card">
-      <div className="flex items-center gap-2 flex-wrap tabular">
-        <span className={`inline-flex items-center gap-0.5 font-semibold ${isBuy ? 'text-success' : 'text-danger'}`}>
-          {isBuy ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {isBuy ? 'BUY' : 'SELL'} {toNum(pos.lot_size)}
-        </span>
-        <span className="text-text-muted">Entry <span className="text-text">{fmtPrice(entry, digits)}</span></span>
-        <span className="text-text-muted">Live <span className="text-text">{live ? fmtPrice(live, digits) : '—'}</span></span>
-        {sl !== null && <span className="text-text-muted">SL <span className="text-danger">{fmtPrice(sl, digits)}</span></span>}
-        {tp !== null && <span className="text-text-muted">TP <span className="text-success">{fmtPrice(tp, digits)}</span></span>}
-        <span className={`font-semibold ${pnlClass(pnl)}`}>{fmtUSD(pnl, { sign: true })}</span>
-      </div>
-    </div>
-  )
-}

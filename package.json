@@ -1,6 +1,6 @@
 {
   "name": "propfirm-frontend",
-  "version": "1.0.0",
+  "version": "10.7.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
