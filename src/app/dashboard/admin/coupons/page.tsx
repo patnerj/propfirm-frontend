@@ -159,34 +159,43 @@ export default function AdminCouponsPage() {
               {list.map((c) => {
                 const st = statusOf(c)
                 return (
-                  <div key={c.id} className="flex items-center gap-3 px-4 sm:px-5 py-3">
-                    <div className="h-9 w-9 rounded bg-accent-muted text-accent flex items-center justify-center shrink-0"><Ticket className="h-4 w-4" /></div>
+                  <div key={c.id} className="flex items-center gap-4 px-4 sm:px-5 py-4">
+                    <div className="h-10 w-10 rounded-lg bg-accent-muted text-accent flex items-center justify-center shrink-0">
+                      <Ticket className="h-5 w-5" />
+                    </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm tabular">{c.code}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm tracking-wide">{c.code}</span>
                         <Badge tone={st.tone}>{st.label}</Badge>
-                        <span className="text-xs text-text-muted">{c.type === 'percent' ? `${c.value}% off` : `${fmtUSD(c.value)} off`}</span>
                       </div>
-                      <div className="text-2xs text-text-muted mt-0.5">
-                        {c.uses ?? 0} use{(c.uses ?? 0) === 1 ? '' : 's'}
-                        {c.usage_limit > 0 ? ` / ${c.usage_limit}` : ''} · revenue {fmtUSD(c.revenue ?? 0)}
-                        {(c.discount_total ?? 0) > 0 ? ` · discounted ${fmtUSD(c.discount_total ?? 0)}` : ''}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs font-medium text-accent">
+                          {c.type === 'percent' ? `${c.value}% off` : `${fmtUSD(c.value)} off`}
+                        </span>
+                        <span className="text-2xs text-text-muted">
+                          {c.uses ?? 0} use{(c.uses ?? 0) === 1 ? '' : 's'}
+                          {c.usage_limit > 0 ? ` / ${c.usage_limit}` : ''} · {fmtUSD(c.revenue ?? 0)} revenue
+                        </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={!!c.active}
-                      onClick={() => toggle(c)}
-                      title={c.active ? 'Enabled — click to disable' : 'Disabled — click to enable'}
-                      className={cn('relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-                        c.active ? 'bg-success' : 'bg-surface-muted border border-border')}
-                    >
-                      <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                        c.active ? 'translate-x-6' : 'translate-x-1')} />
-                    </button>
-                    <Button size="sm" variant="ghost" onClick={() => edit(c)}>Edit</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setToDelete(c)} title="Delete"><Trash2 className="h-4 w-4 text-danger" /></Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!c.active}
+                        onClick={() => toggle(c)}
+                        title={c.active ? 'Enabled — click to disable' : 'Disabled — click to enable'}
+                        className={cn('relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+                          c.active ? 'bg-success' : 'bg-surface-muted border border-border')}
+                      >
+                        <span className={cn('inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                          c.active ? 'translate-x-6' : 'translate-x-1')} />
+                      </button>
+                      <Button size="sm" variant="ghost" onClick={() => edit(c)} className="text-xs">Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setToDelete(c)} title="Delete">
+                        <Trash2 className="h-4 w-4 text-danger" />
+                      </Button>
+                    </div>
                   </div>
                 )
               })}
