@@ -9,7 +9,7 @@ import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
 import { useVisibilityPoll } from '@/hooks/use-visibility-poll'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { fmtPrice, toNum, fmtUSD } from '@/lib/format'
+import { fmtPrice, toNum, fmtUSD, fmtPct, pnlClass } from '@/lib/format'
 import { symbolDigits } from '@/lib/symbol-meta'
 import type { Account, NoChallengeResp, Position, PendingOrder, ChallengeAccount } from '@/types/api'
 
@@ -170,9 +170,6 @@ function DesktopLayout({
 
   return (
     <div className="flex flex-col gap-3 h-[calc(100dvh-6.5rem)] min-h-[640px]">
-      {/* Account metrics */}
-      <AccountStrip account={account} openPnL={openPnL} />
-
       {/* Three-pane grid — left pane collapses to reclaim chart width.
           Side panes use clamp() so they shrink on 1366–1440 laptops (giving the
           chart its proper share) while staying full-width on large monitors.
@@ -239,10 +236,30 @@ function DesktopLayout({
                   </span>
                 )}
               </TabButton>
+              {/* MT5-style account metrics bar */}
+              <div className="ml-auto flex items-center gap-4 pr-1">
+                {account && (() => {
+                  const bal  = toNum(account.balance)
+                  const eq   = toNum(account.equity)
+                  const used = toNum(account.margin_used)
+                  const free = eq - used
+                  const lvl  = used > 0 ? (eq / used) * 100 : null
+                  const pnl  = openPnL ?? (eq - bal)
+                  return (
+                    <>
+                      <span className="text-2xs text-text-muted">Balance: <span className="text-text font-medium">{fmtUSD(bal)}</span></span>
+                      <span className="text-2xs text-text-muted">Equity: <span className="text-text font-medium">{fmtUSD(eq)}</span></span>
+                      <span className="text-2xs text-text-muted">P&L: <span className={cn('font-medium', pnlClass(pnl))}>{fmtUSD(pnl, { sign: true })}</span></span>
+                      <span className="text-2xs text-text-muted hidden lg:inline">Free margin: <span className="text-text font-medium">{fmtUSD(free)}</span></span>
+                      {lvl !== null && <span className="text-2xs text-text-muted hidden xl:inline">Margin level: <span className={cn('font-medium', lvl < 100 ? 'text-danger' : lvl < 200 ? 'text-warn' : 'text-text')}>{fmtPct(lvl, 1)}</span></span>}
+                    </>
+                  )
+                })()}
+              </div>
               {/* Collapse/expand positions panel */}
               <button
                 onClick={togglePos}
-                className="ml-auto h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
+                className="h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
                 aria-label={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
                 title={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
               >
