@@ -166,7 +166,7 @@ export function PayoutManagementModal({
         onSuccess?.()
         onClose()
       } else {
-        toast.error((res as any).error || (res.data as any)?.message || 'Failed to update payout status.')
+        toast.error((res as any).error || (res as any).data?.message || 'Failed to update payout status.')
       }
     } catch (err: any) {
       toast.error(err.message || 'Network error occurred while updating payout.')

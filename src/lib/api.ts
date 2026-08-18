@@ -350,7 +350,7 @@ export const api = {
     commissionsList:(status?: string) => fxsim<Commission[]>('/admin/commissions', { query: { status }, cache: 5_000 }),
     commissionStatus:(id: number, status: 'approved' | 'paid' | 'reversed') => fxsim<{ success: boolean }>(`/admin/commissions/${id}/status`, { body: { status } }),
     testToolsChallenges: () => fxsim<TestToolChallenge[]>('/admin/test-tools/challenges', { cache: 3_000 }),
-    testToolsSet:    (id: number, action: 'phase1' | 'phase2' | 'funded' | 'payout_ready' | 'reset') =>
+    testToolsSet:    (id: number, action: 'phase1' | 'phase2' | 'funded' | 'payout_ready' | 'reset' | 'suspend') =>
       fxsim<{ success: boolean; status?: string; message?: string }>(`/admin/test-tools/challenge/${id}/set`, { body: { action } }),
     notificationsRead: (ids?: number[]) =>
       fxsim<{ success: true }>('/admin/notifications/read', { body: { ids: ids ?? [] } }),

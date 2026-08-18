@@ -52,10 +52,14 @@ const config: Config = {
         tightest: '-0.04em',
       },
       borderRadius: {
-        lg: '12px',
-        md: '8px',
-        sm: '6px',
-        xl: '16px',
+        none: '0px',
+        sm: 'calc(var(--radius, 8px) * 0.5)',
+        DEFAULT: 'var(--radius, 8px)',
+        md: 'var(--radius, 8px)',
+        lg: 'calc(var(--radius, 8px) * 1.5)',
+        xl: 'calc(var(--radius, 8px) * 2)',
+        '2xl': 'calc(var(--radius, 8px) * 2.5)',
+        full: '9999px',
       },
       boxShadow: {
         'card':      '0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.02) inset',

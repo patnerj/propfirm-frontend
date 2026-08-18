@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { CheckCircle2, XCircle, CreditCard, FileText } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
-import { invalidateFxsim, getSession } from '@/lib/fxsim'
+import { invalidateFxsim, getSession, apiUrl } from '@/lib/fxsim'
 import { fmtUSD, fmtDate, statusLabel, statusTone } from '@/lib/format'
 import type { PaymentOrder } from '@/types/api'
 import { Card } from '@/components/ui/card'
@@ -23,9 +23,9 @@ import { PayoutReviewQueue } from '@/components/admin/payout-review-queue'
 // Proof files are served through an authenticated proxy, not a public URL
 // (see admin_payment_proof() in class-rest-api.php) — same pattern as the
 // KYC document viewer's openDoc().
-async function viewProof(url: string) {
+async function viewProof(relativePath: string) {
   try {
-    const res = await fetch(url, { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
     if (!res.ok) throw new Error(String(res.status))
     const blob = await res.blob()
     const obj = URL.createObjectURL(blob)

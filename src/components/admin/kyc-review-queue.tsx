@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import { useAdminKycListQuery } from '@/hooks/useApi'
-import { getSession } from '@/lib/fxsim'
+import { getSession, apiUrl } from '@/lib/fxsim'
 import { fmtDate } from '@/lib/format'
 import type { AdminKycRow } from '@/types/api'
 import { Button } from '@/components/ui/button'
@@ -31,9 +31,9 @@ const DOC_META = [
 ]
 type DocKey = (typeof DOC_META)[number]['key']
 
-async function openDoc(url: string) {
+async function openDoc(relativePath: string) {
   try {
-    const res = await fetch(url, { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
     if (!res.ok) throw new Error(String(res.status))
     const blob = await res.blob()
     const obj = URL.createObjectURL(blob)
@@ -44,9 +44,9 @@ async function openDoc(url: string) {
   }
 }
 
-async function downloadDoc(url: string, label: string) {
+async function downloadDoc(relativePath: string, label: string) {
   try {
-    const res = await fetch(url, { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
     if (!res.ok) throw new Error(String(res.status))
     const blob = await res.blob()
     const type = blob.type || ''

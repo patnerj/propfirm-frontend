@@ -4,21 +4,17 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  // /admin/* was a legacy, independently-implemented admin panel that
-  // duplicated /dashboard/admin/* (fewer routes, and fixes applied to one
-  // tree didn't reach the other — see MASTER_AUDIT_IMPLEMENTATION_REPORT.md).
-  // /dashboard/admin/* is canonical; redirect the old tree here rather than
-  // in the page itself so it happens before any client JS loads, with no
-  // flash of the old UI first.
-  if (path === '/admin' || path.startsWith('/admin/')) {
-    const url = new URL(path.replace(/^\/admin/, '/dashboard/admin'), request.url)
-    url.search = request.nextUrl.search
-    return NextResponse.redirect(url)
-  }
+  // Check if fxsim_authed session flag cookie exists
+  const hasAuthCookie = request.cookies.get('fxsim_authed')?.value === '1'
 
-  // Check if any cookie starting with 'wordpress_logged_in_' exists
-  const cookies = request.cookies.getAll()
-  const hasAuthCookie = cookies.some(c => c.name.startsWith('wordpress_logged_in_'))
+  // Protect /admin routes
+  if (path === '/admin' || path.startsWith('/admin/')) {
+    if (!hasAuthCookie) {
+      const url = new URL('/login', request.url)
+      url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+      return NextResponse.redirect(url)
+    }
+  }
 
   // Protect /dashboard routes
   if (path.startsWith('/dashboard')) {

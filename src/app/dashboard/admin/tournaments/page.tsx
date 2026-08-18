@@ -26,7 +26,9 @@ export default function AdminTournamentsPage() {
   const fetchTournaments = async () => {
     try {
       const res = await api.admin.competitions.list()
-      if (res.ok) setTournaments(res.data)
+      if (res.ok) {
+        setTournaments(Array.isArray(res.data) ? res.data : ((res.data as any)?.tournaments || []))
+      }
     } finally {
       setLoading(false)
     }
@@ -120,7 +122,7 @@ export default function AdminTournamentsPage() {
                     Loading tournaments...
                   </td>
                 </tr>
-              ) : tournaments.length === 0 ? (
+              ) : !Array.isArray(tournaments) || tournaments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-text-muted">
                     No tournaments found. Click 'New Tournament' to create one.

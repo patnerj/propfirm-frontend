@@ -294,6 +294,64 @@ export function applyFontFamily(fontId: string) {
   }
 }
 
+export const RADIUS_PRESETS: Record<string, { base: string; sm: string; md: string; lg: string; xl: string; '2xl': string }> = {
+  none: { base: '0px', sm: '0px', md: '0px', lg: '0px', xl: '0px', '2xl': '0px' },
+  sm:   { base: '4px', sm: '2px', md: '4px', lg: '6px', xl: '8px', '2xl': '10px' },
+  md:   { base: '8px', sm: '4px', md: '8px', lg: '12px', xl: '16px', '2xl': '20px' },
+  lg:   { base: '14px', sm: '6px', md: '10px', lg: '14px', xl: '20px', '2xl': '24px' },
+  full: { base: '9999px', sm: '9999px', md: '9999px', lg: '9999px', xl: '9999px', '2xl': '9999px' },
+}
+
+export function applyRadius(radiusId: string) {
+  if (typeof window === 'undefined') return
+
+  const cleanRadius = (radiusId || 'md').toLowerCase()
+  const r = RADIUS_PRESETS[cleanRadius] || RADIUS_PRESETS['md']
+  const root = document.documentElement
+
+  root.style.setProperty('--radius', r.base)
+
+  let radiusStyleEl = document.getElementById('fxsim-live-theme-radius')
+  if (!radiusStyleEl) {
+    radiusStyleEl = document.createElement('style')
+    radiusStyleEl.id = 'fxsim-live-theme-radius'
+    document.head.appendChild(radiusStyleEl)
+  }
+
+  radiusStyleEl.innerHTML = `
+    :root, [data-theme] {
+      --radius: ${r.base} !important;
+    }
+    .rounded-sm {
+      border-radius: ${r.sm} !important;
+    }
+    .rounded, .rounded-md {
+      border-radius: ${r.md} !important;
+    }
+    .rounded-lg {
+      border-radius: ${r.lg} !important;
+    }
+    .rounded-xl {
+      border-radius: ${r.xl} !important;
+    }
+    .rounded-2xl {
+      border-radius: ${r['2xl']} !important;
+    }
+    .rounded-none {
+      border-radius: 0px !important;
+    }
+    .rounded-full {
+      border-radius: 9999px !important;
+    }
+  `
+
+  try {
+    localStorage.setItem('fxsim:theme-radius', cleanRadius)
+  } catch {
+    /* private mode */
+  }
+}
+
 export function initializeSavedTheme() {
   if (typeof window === 'undefined') return
 
@@ -305,11 +363,12 @@ export function initializeSavedTheme() {
 
     const savedFont = localStorage.getItem('fxsim:theme-font') || 'poppins'
     applyFontFamily(savedFont)
+
+    const savedRadius = localStorage.getItem('fxsim:theme-radius') || 'md'
+    applyRadius(savedRadius)
   } catch {
     /* private mode */
   }
 }
 
 export const initThemeAccent = initializeSavedTheme
-
-

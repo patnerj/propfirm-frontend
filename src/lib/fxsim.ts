@@ -34,6 +34,19 @@ export function getApiBaseUrl(): string {
 
 export const FXSIM_BASE = getApiBaseUrl()
 
+/**
+ * Resolve a backend-relative path (e.g. '/admin/payments/36/proof') against
+ * whichever base is actually active — the same-origin /api/wp proxy in dev
+ * (so the browser's session cookie, scoped to THIS origin via the Next.js
+ * rewrite, is sent) or the real cross-origin backend URL in production.
+ * Endpoints that return a raw rest_url()-built absolute backend URL bypass
+ * the dev proxy entirely and 401 in local dev, because the auth cookie set
+ * during login was scoped to the proxy's origin, not propfirm.local.
+ */
+export function apiUrl(path: string): string {
+  return FXSIM_BASE + (path.startsWith('/') ? path : '/' + path)
+}
+
 // ── Session ────────────────────────────────────────────────────────────────
 type Session = { nonce: string | null; bearer: string | null }
 

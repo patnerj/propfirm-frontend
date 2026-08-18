@@ -626,6 +626,7 @@ export interface PaymentOrder {
   status:       'pending' | 'submitted' | 'approved' | 'rejected'
   proof_url:    string | null
   proof_view_url?: string | null
+  txn_id?:      string | null
   admin_note:   string | null
   created_at:   string
   reviewed_at:  string | null
