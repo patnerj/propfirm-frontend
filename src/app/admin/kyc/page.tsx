@@ -57,23 +57,40 @@ function KycDocViewer({
     const fetchDoc = async () => {
       try {
         const session = getSession()
+        const token = session.bearer || ''
+        const baseDocUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
+        const urlWithToken = token
+          ? `${baseDocUrl}${baseDocUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+          : baseDocUrl
 
-        // Build the proxy URL — same-origin so no CORS preflight at all.
-        // docPath is like "/admin/kyc/3/doc/id_doc" — extract id + type.
-        let proxyUrl: string
-
-        const match = docPath.match(/\/admin\/kyc\/(\d+)\/doc\/([^/]+)/)
-        if (match && session.bearer) {
-          const [, kycId, docType] = match
-          proxyUrl = `/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}&token=${encodeURIComponent(session.bearer)}`
-        } else {
-          // Fallback: try direct fetch (may fail due to CORS, but best-effort)
-          proxyUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
+        const headers: Record<string, string> = {}
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+          headers['X-FXSIM-Token'] = token
+        }
+        if (session.nonce) {
+          headers['X-WP-Nonce'] = session.nonce
         }
 
-        const res = await fetch(proxyUrl, { cache: 'no-store' })
-        if (!res.ok) {
-          throw new Error(`Document fetch returned HTTP ${res.status}`)
+        let res: Response | null = null
+        try {
+          // Primary: Direct backend fetch with auth headers and query token
+          res = await fetch(urlWithToken, {
+            headers,
+            cache: 'no-store',
+          })
+        } catch {
+          // Fallback: If browser blocked direct fetch, try same-origin proxy
+          const match = docPath.match(/\/admin\/kyc\/(\d+)\/doc\/([^/]+)/)
+          if (match && token) {
+            const [, kycId, docType] = match
+            const proxyUrl = `/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}&token=${encodeURIComponent(token)}`
+            res = await fetch(proxyUrl, { cache: 'no-store' })
+          }
+        }
+
+        if (!res || !res.ok) {
+          throw new Error(`Document fetch returned HTTP ${res?.status || 'Network Error'}`)
         }
         const contentType = res.headers.get('content-type') || ''
         const blob = await res.blob()
@@ -128,6 +145,11 @@ function KycDocViewer({
   }
 
   if (error || !blobUrl) {
+    const session = getSession()
+    const directUrl = session.bearer
+      ? `${apiUrl(docPath)}${apiUrl(docPath).includes('?') ? '&' : '?'}token=${encodeURIComponent(session.bearer)}`
+      : apiUrl(docPath)
+
     return (
       <div className="text-center space-y-2 py-8 text-red-400">
         <AlertTriangle className="h-8 w-8 mx-auto" />
@@ -136,7 +158,7 @@ function KycDocViewer({
         <Button 
           size="sm" 
           variant="outline" 
-          onClick={() => window.open(apiUrl(docPath), '_blank')}
+          onClick={() => window.open(directUrl, '_blank')}
           className="border-red-500/30 text-xs text-red-300 hover:bg-red-500/10 gap-1.5 mt-2"
         >
           <ExternalLink className="h-3 w-3" />
