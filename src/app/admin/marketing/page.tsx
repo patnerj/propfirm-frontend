@@ -341,16 +341,24 @@ export default function MarketingHubPage() {
 
   const parsePlanIdsArr = (val: any): number[] => {
     if (Array.isArray(val)) return val.map(Number).filter(n => !isNaN(n))
+    if (typeof val === 'number') return [val]
     if (typeof val === 'string' && val.trim()) {
       return val.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n))
     }
     return []
   }
 
-  const togglePlanRestriction = (planId: number) => {
+  const isPlanSelected = (planId: any) => {
+    const num = Number(planId)
+    return !isNaN(num) && parsePlanIdsArr(couponForm.plan_ids).includes(num)
+  }
+
+  const togglePlanRestriction = (planId: any) => {
+    const num = Number(planId)
+    if (isNaN(num)) return
     const current = parsePlanIdsArr(couponForm.plan_ids)
-    const next = current.includes(planId) ? current.filter(id => id !== planId) : [...current, planId]
-    setCouponForm(prev => ({ ...prev, plan_ids: next.join(', ') }))
+    const next = current.includes(num) ? current.filter(id => id !== num) : [...current, num]
+    setCouponForm(prev => ({ ...prev, plan_ids: next.length > 0 ? next.join(', ') : '' }))
   }
 
   const [isCouponModalOpen, setIsCouponModalOpen] = useState(false)
@@ -2289,18 +2297,22 @@ export default function MarketingHubPage() {
             <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto custom-scrollbar p-1">
               {challengePlans.length > 0 ? (
                 challengePlans.map((p: any) => {
-                  const isSelected = parsePlanIdsArr(couponForm.plan_ids).includes(p.id)
+                  const isSelected = isPlanSelected(p.id)
                   return (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => togglePlanRestriction(p.id)}
-                      className={`text-xs rounded-full px-3 py-1.5 border transition-all duration-150 font-medium ${
+                      onClick={(e) => {
+                        e.preventDefault()
+                        togglePlanRestriction(p.id)
+                      }}
+                      className={`inline-flex items-center gap-1.5 text-xs rounded-full px-3 py-1.5 border transition-all duration-150 font-medium cursor-pointer ${
                         isSelected
                           ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold shadow-sm ring-1 ring-emerald-500/30'
                           : 'border-[#1F2937] bg-[#0B0F19] text-gray-400 hover:border-slate-600 hover:text-gray-200'
                       }`}
                     >
+                      <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-emerald-400' : 'bg-transparent'}`} />
                       {p.name || `Plan #${p.id}`}
                     </button>
                   )

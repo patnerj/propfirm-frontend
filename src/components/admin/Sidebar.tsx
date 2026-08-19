@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Gauge, Shield, Wallet, 
   Settings, Megaphone, Trophy, BarChart3, LifeBuoy, 
   Bell, ChevronLeft, ChevronRight, UserCircle, LogOut,
-  Sparkles, UserCheck
+  Sparkles, UserCheck, CreditCard
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { SidebarBrand } from '@/components/logo'
@@ -23,6 +23,7 @@ export interface NavItem {
 export const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: '/admin',             label: 'Overview',     icon: LayoutDashboard },
   { href: '/admin/traders',     label: 'Traders',      icon: Users },
+  { href: '/admin/payments',    label: 'Payments',     icon: CreditCard },
   { href: '/admin/kyc',         label: 'KYC Hub',      icon: UserCheck },
   { href: '/admin/operations',  label: 'Operations',   icon: Gauge },
   { href: '/admin/risk',        label: 'Risk Control', icon: Shield },

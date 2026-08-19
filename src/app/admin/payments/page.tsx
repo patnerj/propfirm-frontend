@@ -94,6 +94,9 @@ export default function PaymentsHubPage() {
   const [isProofModalOpen, setIsProofModalOpen] = useState(false)
   const [adminActionNote, setAdminActionNote] = useState('')
   const [isOrderActionLoading, setIsOrderActionLoading] = useState(false)
+  const [proofBlobUrl, setProofBlobUrl] = useState<string | null>(null)
+  const [isProofPdf, setIsProofPdf] = useState(false)
+  const [isProofLoading, setIsProofLoading] = useState(false)
 
   const { data: orders = [], isLoading: isOrdersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['admin-payments-list'],
@@ -154,12 +157,80 @@ export default function PaymentsHubPage() {
     setIsProofModalOpen(true)
   }
 
-  // Proof files are served through an authenticated proxy, not a public URL
-  // (see admin_payment_proof() in class-rest-api.php) — same pattern as the
-  // KYC document viewer's openDoc().
+  useEffect(() => {
+    if (!selectedOrder?.proof_view_url || !isProofModalOpen) {
+      if (proofBlobUrl) URL.revokeObjectURL(proofBlobUrl)
+      setProofBlobUrl(null)
+      setIsProofPdf(false)
+      return
+    }
+
+    let isCancelled = false
+    setIsProofLoading(true)
+
+    const fetchModalProof = async () => {
+      try {
+        const session = getSession()
+        const token = session.bearer || ''
+        const baseDocUrl = selectedOrder.proof_view_url!.startsWith('http')
+          ? selectedOrder.proof_view_url!
+          : apiUrl(selectedOrder.proof_view_url!)
+        const urlWithToken = token
+          ? `${baseDocUrl}${baseDocUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+          : baseDocUrl
+
+        const headers: Record<string, string> = {}
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+          headers['X-FXSIM-Token'] = token
+        }
+        if (session.nonce) {
+          headers['X-WP-Nonce'] = session.nonce
+        }
+
+        const res = await fetch(urlWithToken, { credentials: 'include', headers, cache: 'no-store' })
+        if (!res.ok) throw new Error(String(res.status))
+        const contentType = res.headers.get('content-type') || ''
+        const blob = await res.blob()
+        if (isCancelled) return
+
+        const url = URL.createObjectURL(blob)
+        setProofBlobUrl(url)
+        setIsProofPdf(contentType.includes('pdf') || blob.type === 'application/pdf')
+      } catch {
+        if (!isCancelled) setProofBlobUrl(null)
+      } finally {
+        if (!isCancelled) setIsProofLoading(false)
+      }
+    }
+
+    fetchModalProof()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedOrder, isProofModalOpen])
+
+  // Proof files are served through an authenticated endpoint
   const viewProof = async (relativePath: string) => {
     try {
-      const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+      const session = getSession()
+      const token = session.bearer || ''
+      const baseDocUrl = relativePath.startsWith('http') ? relativePath : apiUrl(relativePath)
+      const urlWithToken = token
+        ? `${baseDocUrl}${baseDocUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+        : baseDocUrl
+
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+        headers['X-FXSIM-Token'] = token
+      }
+      if (session.nonce) {
+        headers['X-WP-Nonce'] = session.nonce
+      }
+
+      const res = await fetch(urlWithToken, { credentials: 'include', headers, cache: 'no-store' })
       if (!res.ok) throw new Error(String(res.status))
       const blob = await res.blob()
       const obj = URL.createObjectURL(blob)
@@ -566,6 +637,36 @@ export default function PaymentsHubPage() {
                 ) : (
                   <span className="text-xs text-gray-500 font-mono block">No transaction reference provided.</span>
                 )}
+                {/* Inline Proof Preview */}
+                {isProofLoading && (
+                  <div className="flex items-center justify-center py-6 gap-2 text-emerald-400">
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                    <span className="text-xs font-mono text-gray-400">Loading proof attachment...</span>
+                  </div>
+                )}
+                {!isProofLoading && proofBlobUrl && !isProofPdf && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-[#1F2937] bg-black/40 flex items-center justify-center max-h-72">
+                    <img 
+                      src={proofBlobUrl} 
+                      alt="Payment receipt proof" 
+                      className="max-h-72 w-auto object-contain cursor-pointer"
+                      onClick={() => viewProof(selectedOrder.proof_view_url!)}
+                      title="Click to view full size"
+                    />
+                  </div>
+                )}
+                {!isProofLoading && proofBlobUrl && isProofPdf && (
+                  <div className="mt-2 p-3 rounded-lg border border-[#1F2937] bg-black/20 flex items-center justify-between">
+                    <span className="text-xs font-mono text-emerald-300">PDF document attached</span>
+                    <button
+                      type="button"
+                      onClick={() => viewProof(selectedOrder.proof_view_url!)}
+                      className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-mono"
+                    >
+                      Open PDF <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-1">
                   {selectedOrder.proof_view_url ? (
                     <button
@@ -573,7 +674,7 @@ export default function PaymentsHubPage() {
                       onClick={() => viewProof(selectedOrder.proof_view_url!)}
                       className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1 font-mono"
                     >
-                      View submitted proof <ExternalLink className="h-3 w-3" />
+                      Open in new tab <ExternalLink className="h-3 w-3" />
                     </button>
                   ) : (
                     <span className="text-[11px] text-gray-500 font-mono">No proof file was uploaded for this order.</span>

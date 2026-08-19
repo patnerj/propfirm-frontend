@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin',            label: 'Overview',   icon: LayoutDashboard, queryKey: ['admin', 'overview'] },
   { href: '/admin/traders',    label: 'Traders',    icon: Users, queryKey: ['admin', 'traders'] },
+  { href: '/admin/payments',   label: 'Payments',   icon: CreditCard, queryKey: ['admin', 'payments'] },
   { href: '/admin/kyc',        label: 'KYC Hub',    icon: UserCheck, queryKey: ['admin', 'kyc'] },
   { href: '/admin/marketing',  label: 'Marketing',  icon: Megaphone, queryKey: ['admin', 'marketing'] },
   { href: '/admin/tournaments',label: 'Tournaments',icon: Trophy, queryKey: ['admin', 'tournaments'] },
