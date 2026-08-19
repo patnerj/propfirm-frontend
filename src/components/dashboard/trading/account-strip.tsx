@@ -53,9 +53,9 @@ export const AccountStrip = memo(function AccountStrip({ account, openPnL, metri
     <div className="flex items-center gap-1.5 text-3xs font-medium uppercase tracking-wider text-text-muted px-1">
       <span className={cn(
         'w-1.5 h-1.5 rounded-full inline-block',
-        connected && source === 'ws' ? 'bg-success animate-pulse' : source === 'poll' ? 'bg-accent' : 'bg-warn'
+        connected ? 'bg-success animate-pulse' : 'bg-warn'
       )} />
-      <span>{connected && source === 'ws' ? 'Live Stream' : source === 'poll' ? 'Polling' : 'Connecting'}</span>
+      <span>{connected ? 'Connected' : 'Connecting'}</span>
     </div>
   )
 

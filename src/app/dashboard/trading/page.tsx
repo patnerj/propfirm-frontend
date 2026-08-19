@@ -10,7 +10,7 @@ import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
 import { useQuery } from '@tanstack/react-query'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { fmtPrice, toNum, fmtUSD } from '@/lib/format'
+import { fmtPrice, toNum, fmtUSD, fmtPct } from '@/lib/format'
 import { symbolDigits } from '@/lib/symbol-meta'
 import type { Account, NoChallengeResp, Position, PendingOrder, ChallengeAccount, ChallengePlan, ChallengeMetrics } from '@/types/api'
 
@@ -236,13 +236,16 @@ function DesktopLayout({
     }
   }
 
-  return (
-    <div className="flex flex-col gap-3 h-[calc(100dvh-6.5rem)] min-h-[640px]">
-      {/* Account metrics */}
-      <SectionErrorBoundary>
-        <AccountStrip account={account} openPnL={openPnL} metrics={metrics} />
-      </SectionErrorBoundary>
+  const balance = toNum(account?.balance)
+  const equity  = toNum(account?.equity)
+  const used    = toNum(account?.margin_used)
+  const free    = equity - used
+  const level   = used > 0 ? (equity / used) * 100 : null
+  const lev     = toNum(account?.leverage) || 100
+  const pnl     = openPnL ?? (equity - balance)
 
+  return (
+    <div className="flex flex-col gap-2 h-[calc(100dvh-4.5rem)] min-h-[600px]">
       <PanelGroup orientation="horizontal" className="flex-1 min-h-0 w-full rounded-lg">
         {/* Left: market watch */}
         <Panel
@@ -324,7 +327,7 @@ function DesktopLayout({
               }}
             >
               <section className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col h-full min-h-0">
-                <div className="shrink-0 flex items-center gap-1 px-3 pt-2 border-b border-border-subtle">
+                <div className="shrink-0 flex items-center gap-1 px-3 py-1.5 border-b border-border-subtle bg-bg-subtle/40">
                   <TabButton active={tab === 'positions'} onClick={() => setTab('positions')}>
                     Positions
                     {positions && positions.length > 0 && (
@@ -341,27 +344,58 @@ function DesktopLayout({
                       </span>
                     )}
                   </TabButton>
-                  <button
-                    onClick={togglePos}
-                    className="ml-auto h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
-                    aria-label={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
-                    title={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
-                  >
-                    {posCollapsed
-                      ? <PanelLeftOpen className="h-3.5 w-3.5 rotate-90" />
-                      : <PanelLeftClose className="h-3.5 w-3.5 rotate-90" />
-                    }
-                  </button>
-                </div>
-                {!posCollapsed && (
-                  <div className="flex-1 overflow-y-auto min-h-0">
-                    <SectionErrorBoundary>
-                      {tab === 'positions'
-                        ? <PositionsTable positions={positions} onChanged={onChanged} />
-                        : <PendingOrdersTable orders={pending} onChanged={onChanged} />
+
+                  {/* Connection indicator */}
+                  <div className="ml-auto flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Connected</span>
+                    </div>
+                    <button
+                      onClick={togglePos}
+                      className="h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
+                      aria-label={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
+                      title={posCollapsed ? 'Expand positions panel' : 'Collapse positions panel'}
+                    >
+                      {posCollapsed
+                        ? <PanelLeftOpen className="h-3.5 w-3.5 rotate-90" />
+                        : <PanelLeftClose className="h-3.5 w-3.5 rotate-90" />
                       }
-                    </SectionErrorBoundary>
+                    </button>
                   </div>
+                </div>
+
+                {!posCollapsed && (
+                  <>
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <SectionErrorBoundary>
+                        {tab === 'positions'
+                          ? <PositionsTable positions={positions} onChanged={onChanged} />
+                          : <PendingOrdersTable orders={pending} onChanged={onChanged} />
+                        }
+                      </SectionErrorBoundary>
+                    </div>
+
+                    {/* MT5 Bottom Telemetry Summary Row */}
+                    {account && (
+                      <div className="shrink-0 border-t border-border-subtle bg-bg-subtle/90 backdrop-blur px-3.5 py-1.5 flex items-center justify-between gap-4 text-xs font-mono select-none overflow-x-auto no-scrollbar">
+                        <div className="flex items-center gap-4 sm:gap-6 shrink-0 text-text-muted">
+                          <span>Balance: <strong className="text-white font-semibold">{fmtUSD(balance)}</strong></span>
+                          <span>Equity: <strong className="text-emerald-400 font-semibold">{fmtUSD(equity)}</strong></span>
+                          <span>Margin: <strong className="text-gray-200 font-medium">{fmtUSD(used)}</strong></span>
+                          <span>Free Margin: <strong className="text-white font-semibold">{fmtUSD(free)}</strong></span>
+                          <span>Margin Level: <strong className={level !== null && level <= 120 ? 'text-rose-400 font-bold' : 'text-gray-200'}>{level !== null ? fmtPct(level, 1) : '—'}</strong></span>
+                          <span>Leverage: <strong className="text-gray-300">1:{lev}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-text-muted">Total P/L:</span>
+                          <span className={`font-bold tabular ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {fmtUSD(pnl, { sign: true })}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             </Panel>
@@ -433,13 +467,24 @@ function MobileLayout({
   const ask = toNum(tick?.ask)
 
   return (
-    <div className="flex flex-col gap-3 h-[calc(100dvh-6rem)] -mx-3 -my-3 md:-mx-4 md:-my-4">
-      {/* Account strip — compact */}
-      <div className="px-4 pt-4 shrink-0">
-        <SectionErrorBoundary>
-          <AccountStrip account={account} openPnL={openPnL} metrics={metrics} compact />
-        </SectionErrorBoundary>
-      </div>
+    <div className="flex flex-col gap-2 h-[calc(100dvh-5rem)] -mx-3 -my-3 md:-mx-4 md:-my-4">
+      {/* Account strip — sleek MT5 mobile bar */}
+      {account && (
+        <div className="px-3 pt-2 shrink-0">
+          <div className="rounded-lg border border-border bg-surface px-3 py-1.5 flex items-center justify-between text-xs font-mono">
+            <div className="flex items-center gap-3">
+              <span className="text-text-muted">Eq: <strong className="text-emerald-400 font-semibold">{fmtUSD(toNum(account.equity))}</strong></span>
+              <span className="text-text-muted">Bal: <strong className="text-white">{fmtUSD(toNum(account.balance))}</strong></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-text-muted">P&L:</span>
+              <span className={`font-bold ${openPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {fmtUSD(openPnL, { sign: true })}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chart — fills remaining space; ChartPanel header has symbol + tap-to-change */}
       <div className="flex-1 mx-4 rounded-lg border border-border overflow-hidden min-h-0">
