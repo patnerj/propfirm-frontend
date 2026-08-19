@@ -183,7 +183,7 @@ export function ThemeEditor() {
             <p className="text-sm text-text-muted max-w-sm">
               Use our drag-and-drop editor to build and customize your landing page layout, text, and components visually.
             </p>
-            <Button onClick={() => window.location.href = '/dashboard/admin/builder'} className="mt-2">
+            <Button onClick={() => window.location.href = '/admin/builder'} className="mt-2">
               Launch Drag & Drop Editor
             </Button>
           </div>

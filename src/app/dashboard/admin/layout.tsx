@@ -41,15 +41,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const ready    = useAuth((s) => s.ready)
   const impersonating = useImpersonation((s) => s.record)
 
-  // Redirect non-admins (and impersonated sessions) to the trader dashboard
+  // Redirect to canonical /admin route
   useEffect(() => {
     if (!ready) return
-    if (!user) return            // outer layout already handles redirect to /login
-    if (impersonating) {         // impersonating → no admin access
+    if (!user) return
+    if (impersonating || !user.is_admin) {
       router.replace('/dashboard')
       return
     }
-    if (!user.is_admin) router.replace('/dashboard')
+    router.replace('/admin')
   }, [ready, user, impersonating, router])
 
   if (!ready || !user) {

@@ -41,10 +41,8 @@ export function BannerBar({ placement }: { placement: 'top' | 'dashboard' }) {
 
   useEffect(() => {
     let cancel = false
-    // BUG-002: marketing/sales banners target traders and the marketing site,
-    // not the admin command center. The dashboard layout wraps both trader and
-    // admin pages, so skip banner loading entirely on /dashboard/admin routes.
-    if ((pathname || '').startsWith('/dashboard/admin')) {
+    // Skip banner loading entirely on admin command center routes.
+    if ((pathname || '').startsWith('/admin') || (pathname || '').startsWith('/dashboard/admin')) {
       setBanner(null)
       return
     }

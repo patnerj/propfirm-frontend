@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronRight, User, Settings, CreditCard, LayoutDashboard } from 'lucide-react'
+import { Search, ChevronRight, User, Settings, CreditCard, LayoutDashboard, Shield } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/cn'
 
@@ -24,11 +24,11 @@ export function CommandPalette() {
 
   const actions = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { title: 'Admin Overview', icon: LayoutDashboard, href: '/dashboard/admin' },
-    { title: 'Manage Users', icon: User, href: '/dashboard/admin/users' },
-    { title: 'Manage Challenges', icon: Trophy, href: '/dashboard/admin/challenges' },
-    { title: 'Manage Plans', icon: Settings, href: '/dashboard/admin/plans' },
-    { title: 'Payout Requests', icon: CreditCard, href: '/dashboard/admin/payments' },
+    { title: 'Admin Overview', icon: LayoutDashboard, href: '/admin' },
+    { title: 'Manage Traders', icon: User, href: '/admin/traders' },
+    { title: 'Risk Control', icon: Shield, href: '/admin/risk' },
+    { title: 'System Config', icon: Settings, href: '/admin/config' },
+    { title: 'Payout Requests', icon: CreditCard, href: '/admin/payouts' },
     { title: 'Account Settings', icon: Settings, href: '/dashboard/settings' },
   ]
 

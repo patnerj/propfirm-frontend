@@ -8,6 +8,28 @@ export function middleware(request: NextRequest) {
   const cookies = request.cookies.getAll()
   const hasAuthCookie = request.cookies.get('fxsim_authed')?.value === '1' || cookies.some(c => c.name.startsWith('wordpress_logged_in_'))
 
+  // Canonical redirect: strictly map any /dashboard/admin* URL to /admin*
+  if (path === '/dashboard/admin' || path === '/dashboard/admin/') {
+    const url = new URL('/admin', request.url)
+    return NextResponse.redirect(url, 308)
+  }
+  if (path.startsWith('/dashboard/admin/')) {
+    const sub = path.replace('/dashboard/admin/', '')
+    const targetMap: Record<string, string> = {
+      'users': 'traders',
+      'challenges': 'traders',
+      'payments': 'payouts',
+      'settings': 'config',
+      'setup': 'config',
+      'support': 'helpdesk',
+      'notifications': 'activity',
+      'health': 'operations',
+    }
+    const mapped = targetMap[sub] || sub
+    const url = new URL(`/admin/${mapped}`, request.url)
+    return NextResponse.redirect(url, 308)
+  }
+
   // Protect /admin routes
   if (path === '/admin' || path.startsWith('/admin/')) {
     if (!hasAuthCookie) {

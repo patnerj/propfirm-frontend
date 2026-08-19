@@ -78,7 +78,7 @@ export function Topbar({ onMenuClick = () => {}, role, user: userProp }: TopbarP
   const unread   = notifs?.unread_count ?? 0
 
   const handleLinkHover = (href: string) => {
-    if (href === '/dashboard/notifications' || href === '/dashboard/admin/notifications') {
+    if (href === '/dashboard/notifications' || href === '/admin/activity') {
       queryClient.prefetchQuery({
         queryKey: ['topbar.notifs', adminMode],
         queryFn: async () => {
@@ -282,7 +282,7 @@ function NotificationsButton({
 
             <div className="px-4 py-2 border-t border-border-subtle">
               <Link
-                href={adminMode ? '/dashboard/admin/notifications' : '/dashboard/notifications'}
+                href={adminMode ? '/admin/activity' : '/dashboard/notifications'}
                 onClick={() => setOpen(false)}
                 className="block text-center text-2xs text-accent hover:underline"
               >

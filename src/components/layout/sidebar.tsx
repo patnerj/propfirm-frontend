@@ -42,17 +42,17 @@ const NAV: NavItem[] = [
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { href: '/dashboard/admin',            label: 'Overview',   icon: LayoutDashboard, queryKey: ['admin', 'overview'] },
-  { href: '/dashboard/admin/traders',    label: 'Traders',    icon: Users, queryKey: ['admin', 'traders'] },
-  { href: '/dashboard/admin/marketing',  label: 'Marketing',  icon: Megaphone, queryKey: ['admin', 'marketing'] },
-  { href: '/dashboard/admin/tournaments',label: 'Tournaments',icon: Trophy, queryKey: ['admin', 'tournaments'] },
-  { href: '/dashboard/admin/operations', label: 'Operations', icon: Gauge, queryKey: ['admin', 'operations'] },
-  { href: '/dashboard/admin/risk',       label: 'Risk',       icon: Shield, queryKey: ['admin', 'risk'] },
-  { href: '/dashboard/admin/payouts',    label: 'Payouts',    icon: Wallet, queryKey: ['admin', 'payouts'] },
-  { href: '/dashboard/admin/analytics',  label: 'Analytics',  icon: BarChart3, queryKey: ['admin', 'analytics'] },
-  { href: '/dashboard/admin/support',    label: 'Helpdesk',   icon: LifeBuoy, queryKey: ['admin', 'support'] },
-  { href: '/dashboard/admin/config',     label: 'Config',     icon: Settings, queryKey: ['admin', 'config'] },
-  { href: '/dashboard/admin/notifications', label: 'Activity',   icon: Bell, queryKey: ['admin', 'notifications'] },
+  { href: '/admin',            label: 'Overview',   icon: LayoutDashboard, queryKey: ['admin', 'overview'] },
+  { href: '/admin/traders',    label: 'Traders',    icon: Users, queryKey: ['admin', 'traders'] },
+  { href: '/admin/marketing',  label: 'Marketing',  icon: Megaphone, queryKey: ['admin', 'marketing'] },
+  { href: '/admin/tournaments',label: 'Tournaments',icon: Trophy, queryKey: ['admin', 'tournaments'] },
+  { href: '/admin/operations', label: 'Operations', icon: Gauge, queryKey: ['admin', 'operations'] },
+  { href: '/admin/risk',       label: 'Risk',       icon: Shield, queryKey: ['admin', 'risk'] },
+  { href: '/admin/payouts',    label: 'Payouts',    icon: Wallet, queryKey: ['admin', 'payouts'] },
+  { href: '/admin/analytics',  label: 'Analytics',  icon: BarChart3, queryKey: ['admin', 'analytics'] },
+  { href: '/admin/helpdesk',   label: 'Helpdesk',   icon: LifeBuoy, queryKey: ['admin', 'support'] },
+  { href: '/admin/config',     label: 'Config',     icon: Settings, queryKey: ['admin', 'config'] },
+  { href: '/admin/activity',   label: 'Activity',   icon: Bell, queryKey: ['admin', 'notifications'] },
 ]
 
 export interface SidebarProps {
@@ -142,9 +142,9 @@ function SidebarBody({ collapsed = false, onToggleCollapse, role, currentPath }:
   }, [adminMode, pathname])
 
   const items = adminMode
-    ? ADMIN_NAV.filter((i) => !(setupDone && i.href === '/dashboard/admin/setup'))
+    ? ADMIN_NAV.filter((i) => !(setupDone && i.href === '/admin/setup'))
     : NAV
-  const homeHref = adminMode ? '/dashboard/admin' : '/dashboard'
+  const homeHref = adminMode ? '/admin' : '/dashboard'
 
   const handleMouseEnter = (item: NavItem) => {
     if (item.href === '/dashboard/history') {
@@ -179,7 +179,7 @@ function SidebarBody({ collapsed = false, onToggleCollapse, role, currentPath }:
           return res.ok ? res.data : []
         },
       })
-    } else if (item.href === '/dashboard/admin/traders') {
+    } else if (item.href === '/admin/traders') {
       queryClient.prefetchQuery({
         queryKey: ['admin', 'users'],
         queryFn: async () => {
@@ -187,7 +187,7 @@ function SidebarBody({ collapsed = false, onToggleCollapse, role, currentPath }:
           return res.ok ? res.data : []
         },
       })
-    } else if (item.href === '/dashboard/admin/payouts') {
+    } else if (item.href === '/admin/payouts') {
       queryClient.prefetchQuery({
         queryKey: ['admin', 'payouts'],
         queryFn: async () => {
@@ -227,7 +227,7 @@ function SidebarBody({ collapsed = false, onToggleCollapse, role, currentPath }:
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {items.map((it) => {
-          const isRoot = it.href === '/dashboard' || it.href === '/dashboard/admin'
+          const isRoot = it.href === '/dashboard' || it.href === '/admin'
           const active = isRoot
             ? pathname === it.href
             : pathname?.startsWith(it.href)
