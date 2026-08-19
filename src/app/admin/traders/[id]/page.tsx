@@ -892,9 +892,17 @@ export default function Trader360ProfilePage() {
                   Status of identity documentation
                 </CardDescription>
               </div>
-              <Badge tone={trader.kyc_status === 'verified' ? 'success' : 'neutral'} size="sm">
-                {trader.kyc_status === 'verified' ? 'Verified' : 'Pending / Not Submitted'}
-              </Badge>
+              <div className="flex items-center gap-2.5">
+                <Badge tone={trader.kyc_status === 'verified' ? 'success' : trader.kyc_status === 'pending' ? 'warning' : 'neutral'} size="sm">
+                  {trader.kyc_status === 'verified' ? 'Verified' : trader.kyc_status === 'pending' ? 'Pending Review' : 'Unverified'}
+                </Badge>
+                <Button size="sm" asChild variant="outline" className="border-[#1F2937] text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 gap-1.5 h-7 text-xs">
+                  <Link href="/admin/kyc">
+                    <ExternalLink className="h-3 w-3" />
+                    Review in KYC Hub
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
 
             <CardContent className="p-5">

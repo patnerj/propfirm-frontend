@@ -7,7 +7,7 @@ import {
   Search, Filter, Download, MoreVertical, Shield, User, 
   ExternalLink, Sliders, KeyRound, Ban, CheckCircle2, 
   Clock, AlertTriangle, RefreshCw, Plus, ArrowUpRight,
-  TrendingUp, TrendingDown, DollarSign, Eye
+  TrendingUp, TrendingDown, DollarSign, Eye, UserCheck
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -441,7 +441,13 @@ export default function TradersHubPage() {
           return <Badge tone="success" size="sm">Verified</Badge>
         }
         if (row.kyc_status === 'pending') {
-          return <Badge tone="warning" size="sm" pulsing>Pending</Badge>
+          return (
+            <Link href="/admin/kyc" title="Click to open in KYC Review Hub">
+              <Badge tone="warning" size="sm" pulsing className="cursor-pointer hover:opacity-80">
+                Pending Review →
+              </Badge>
+            </Link>
+          )
         }
         return <Badge tone="neutral" size="sm">Unverified</Badge>
       }
@@ -486,6 +492,13 @@ export default function TradersHubPage() {
                 <DropdownMenuItem className="gap-2.5">
                   <ExternalLink className="h-4 w-4 text-emerald-400" />
                   View 360 Profile
+                </DropdownMenuItem>
+              </Link>
+
+              <Link href="/admin/kyc">
+                <DropdownMenuItem className="gap-2.5">
+                  <UserCheck className="h-4 w-4 text-purple-400" />
+                  Review KYC Hub
                 </DropdownMenuItem>
               </Link>
 

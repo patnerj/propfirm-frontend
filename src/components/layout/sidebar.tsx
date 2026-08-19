@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   LayoutDashboard, Trophy, History, Banknote,
   Award, Bell, Settings, X, LifeBuoy, CandlestickChart,
-  Users, CreditCard, Layers, BarChart3, SlidersHorizontal, PanelLeftClose, PanelLeftOpen, Mail, Megaphone, Ticket, Users2, HeartPulse, Rocket, Gauge, Palette, ShieldAlert, Swords, Shield, Wallet
+  Users, CreditCard, Layers, BarChart3, SlidersHorizontal, PanelLeftClose, PanelLeftOpen, Mail, Megaphone, Ticket, Users2, HeartPulse, Rocket, Gauge, Palette, ShieldAlert, Swords, Shield, Wallet, UserCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin',            label: 'Overview',   icon: LayoutDashboard, queryKey: ['admin', 'overview'] },
   { href: '/admin/traders',    label: 'Traders',    icon: Users, queryKey: ['admin', 'traders'] },
+  { href: '/admin/kyc',        label: 'KYC Hub',    icon: UserCheck, queryKey: ['admin', 'kyc'] },
   { href: '/admin/marketing',  label: 'Marketing',  icon: Megaphone, queryKey: ['admin', 'marketing'] },
   { href: '/admin/tournaments',label: 'Tournaments',icon: Trophy, queryKey: ['admin', 'tournaments'] },
   { href: '/admin/operations', label: 'Operations', icon: Gauge, queryKey: ['admin', 'operations'] },
