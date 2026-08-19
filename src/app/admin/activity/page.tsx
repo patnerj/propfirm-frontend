@@ -20,161 +20,20 @@ import type { AdminNotification, AdminNotificationsResp } from '@/types/api'
 
 type EventCategory = 'all' | 'purchases' | 'breaches' | 'passes' | 'support'
 
-// Comprehensive fallback activity logs spanning all prop firm operations
-const DEFAULT_ACTIVITY_NOTIFICATIONS: AdminNotification[] = [
-  {
-    id: 101,
-    type: 'success',
-    title: 'New Challenge Purchase',
-    message: 'Trader Alex Morgan ($100K Elite 2-Step) completed checkout via Stripe ($499.00 USD).',
-    created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    is_read: 0,
-    link: null,
-    ref_user_id: 1042,
-    ref_user_label: 'Alex Morgan (#1042)',
-  },
-  {
-    id: 102,
-    type: 'warning',
-    title: 'Payout Request Submitted',
-    message: 'Trader Sarah Jenkins submitted withdrawal request for $2,840.00 (Crypto TRC20). Founder compliance audit required.',
-    created_at: new Date(Date.now() - 1000 * 60 * 54).toISOString(),
-    is_read: 0,
-    link: null,
-    ref_user_id: 981,
-    ref_user_label: 'Sarah Jenkins (#981)',
-  },
-  {
-    id: 103,
-    type: 'error',
-    title: 'Daily Drawdown Breach',
-    message: 'Account #CH-8821 hit 5.2% Daily Drawdown ceiling on EURUSD position. Trading halted and account suspended.',
-    created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 8821,
-    ref_user_label: 'David Miller (#8821)',
-  },
-  {
-    id: 104,
-    type: 'info',
-    title: 'Phase 1 Milestone Passed',
-    message: 'Trader Marcus Vance achieved +8.4% profit target on $50K Challenge. Phase 2 credentials dispatched.',
-    created_at: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 774,
-    ref_user_label: 'Marcus Vance (#774)',
-  },
-  {
-    id: 105,
-    type: 'success',
-    title: 'Funded Pro Account Upgraded',
-    message: 'Trader Elena Rostova passed Phase 2. Live $100K Funded Pro account generated on Server 1.',
-    created_at: new Date(Date.now() - 1000 * 60 * 720).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 651,
-    ref_user_label: 'Elena Rostova (#651)',
-  },
-  {
-    id: 106,
-    type: 'warning',
-    title: 'Urgent Support Ticket #4412',
-    message: 'Trader Liam Chen submitted urgent inquiry regarding crypto payout tx hash verification.',
-    created_at: new Date(Date.now() - 1000 * 60 * 850).toISOString(),
-    is_read: 0,
-    link: null,
-    ref_user_id: 529,
-    ref_user_label: 'Liam Chen (#529)',
-  },
-  {
-    id: 107,
-    type: 'success',
-    title: 'Crypto Payment Confirmed',
-    message: 'Trader Sophia Taylor purchased $50K Rapid 1-Step Pass via USDT (TRC-20, $299.00 USD).',
-    created_at: new Date(Date.now() - 1000 * 60 * 1100).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 488,
-    ref_user_label: 'Sophia Taylor (#488)',
-  },
-  {
-    id: 108,
-    type: 'error',
-    title: 'Maximum Trailing Drawdown Hit',
-    message: 'Account #CH-7104 breached 10.0% trailing equity floor on volatile Gold (XAUUSD) trade.',
-    created_at: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 7104,
-    ref_user_label: 'Michael Chang (#7104)',
-  },
-  {
-    id: 109,
-    type: 'success',
-    title: 'Profit Payout Disbursed',
-    message: 'Treasury executed $4,150.00 profit split to Trader Ryan Cooper via Wise Transfer.',
-    created_at: new Date(Date.now() - 1000 * 60 * 2100).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 341,
-    ref_user_label: 'Ryan Cooper (#341)',
-  },
-  {
-    id: 110,
-    type: 'info',
-    title: 'KYC Document Verified',
-    message: 'Trader Isabella Silva submitted Sumsub identity verification — status approved.',
-    created_at: new Date(Date.now() - 1000 * 60 * 2800).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 290,
-    ref_user_label: 'Isabella Silva (#290)',
-  },
-  {
-    id: 111,
-    type: 'warning',
-    title: 'Toxic Scalping Alert',
-    message: 'Risk Engine flagged 8 consecutive trades under 15 seconds hold time on account #CH-9931.',
-    created_at: new Date(Date.now() - 1000 * 60 * 3500).toISOString(),
-    is_read: 0,
-    link: null,
-    ref_user_id: 9931,
-    ref_user_label: 'Victor Stone (#9931)',
-  },
-  {
-    id: 112,
-    type: 'success',
-    title: 'Phase 2 Milestone Passed',
-    message: 'Trader Daniel Kim completed $25K Phase 2 requirements with +5.1% return over 6 trading days.',
-    created_at: new Date(Date.now() - 1000 * 60 * 4200).toISOString(),
-    is_read: 1,
-    link: null,
-    ref_user_id: 182,
-    ref_user_label: 'Daniel Kim (#182)',
-  }
-]
-
 export default function AdminActivityPage() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [category, setCategory] = useState<EventCategory>('all')
   const [unreadOnly, setUnreadOnly] = useState(false)
 
-  const { data, isPending } = useQuery<AdminNotificationsResp>({
+  const { data, isPending, refetch } = useQuery<AdminNotificationsResp>({
     queryKey: ['admin-activity-notifications'],
     queryFn: () => api.admin.notifications().then(res => res.ok ? res.data : { notifications: [], unread_count: 0 }),
     refetchInterval: 15000 // auto-poll every 15s
   })
 
-  const rawList = data?.notifications && data.notifications.length > 0 
-    ? data.notifications 
-    : DEFAULT_ACTIVITY_NOTIFICATIONS
-
-  const unreadCount = data?.unread_count && data.unread_count > 0
-    ? data.unread_count
-    : rawList.filter(n => !n.is_read).length
+  const rawList = data?.notifications ?? []
+  const unreadCount = data?.unread_count ?? rawList.filter(n => !n.is_read).length
 
   // Filter logic
   const filteredList = useMemo(() => {
@@ -472,12 +331,14 @@ export default function AdminActivityPage() {
         <div className="py-20 text-center text-gray-400 bg-[#111827] border border-[#1F2937] rounded-2xl space-y-3">
           <Bell className="h-10 w-10 mx-auto text-gray-600" />
           <p className="font-semibold text-white text-base">
-            No activity matches your filters
+            {rawList.length === 0 ? 'No activity logs recorded yet' : 'No activity matches your filters'}
           </p>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto">
-            Try resetting your search query or selecting a different event category tab.
+          <p className="text-xs text-gray-400 max-w-md mx-auto">
+            {rawList.length === 0 
+              ? 'Real-time platform events will appear here automatically as traders purchase challenges, place trades, trigger risk rules, and request payouts.'
+              : 'Try resetting your search query or selecting a different event category tab.'}
           </p>
-          {hasActiveFilters && (
+          {hasActiveFilters ? (
             <Button
               variant="outline"
               size="sm"
@@ -485,6 +346,16 @@ export default function AdminActivityPage() {
               className="border-[#1F2937] text-gray-300 hover:text-white hover:bg-slate-800 mt-2"
             >
               Reset Filters
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="border-[#1F2937] text-gray-300 hover:text-white hover:bg-slate-800 mt-2 gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Refresh Feed</span>
             </Button>
           )}
         </div>
