@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler, GripVertical, Zap } from 'lucide-react'
 import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
-import { tvSymbol, tvInterval, symbolDigits, parseTvMap } from '@/lib/symbol-meta'
+import { tvSymbol, tvInterval, symbolDigits, parseTvMap, pipSize } from '@/lib/symbol-meta'
 import { useBranding } from '@/store/branding'
 import { fmtPrice, fmtUSD, toNum, pnlClass } from '@/lib/format'
 import type { Position } from '@/types/api'
@@ -13,7 +13,7 @@ import { api } from '@/lib/api'
 import { invalidateFxsim } from '@/lib/fxsim'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
-import { playOrderSuccessSound } from '@/lib/sound'
+import { playOrderSuccessSound, playSltpUpdatedSound } from '@/lib/sound'
 
 interface Props {
   compact?: boolean
@@ -496,29 +496,115 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
   )
 })
 
-// Compact overlay card: one open position's live execution levels.
-// All values come from the sim execution feed (current_price / pnl), not the chart.
+// Interactive Draggable On-Chart SL / TP & Position Manager
 function ExecLevelRow({ pos, digits }: { pos: Position; digits: number }) {
   const isBuy = pos.type === 'buy'
   const live  = toNum(pos.current_price)
   const entry = toNum(pos.open_price)
-  const sl    = pos.sl != null && pos.sl !== '' ? toNum(pos.sl) : null
-  const tp    = pos.tp != null && pos.tp !== '' ? toNum(pos.tp) : null
+  const [sl, setSl] = useState<number | null>(pos.sl != null && pos.sl !== '' ? toNum(pos.sl) : null)
+  const [tp, setTp] = useState<number | null>(pos.tp != null && pos.tp !== '' ? toNum(pos.tp) : null)
   const pnl   = toNum(pos.pnl) + toNum(pos.swap) - toNum(pos.commission)
+  const [saving, setSaving] = useState(false)
+
+  // Keep internal state in sync with prop updates
+  useEffect(() => {
+    setSl(pos.sl != null && pos.sl !== '' ? toNum(pos.sl) : null)
+    setTp(pos.tp != null && pos.tp !== '' ? toNum(pos.tp) : null)
+  }, [pos.sl, pos.tp])
+
+  const pip = pipSize(pos.symbol, digits)
+
+  const applySltp = async (newSl: number | null, newTp: number | null) => {
+    setSaving(true)
+    const res = await api.sltp(pos.id, newSl, newTp)
+    setSaving(false)
+    if (res.ok && res.data.success) {
+      setSl(newSl)
+      setTp(newTp)
+      playSltpUpdatedSound()
+      toast.success(`SL/TP updated for ${pos.symbol}`)
+      invalidateFxsim('/positions')
+      usePrices.getState().refresh()
+    } else {
+      toast.error(res.ok ? (res.data.message || 'Failed to update SL/TP') : res.error)
+    }
+  }
+
+  const quickSetTp = (pips: number) => {
+    const target = isBuy ? entry + pips * pip : entry - pips * pip
+    const rounded = Number(target.toFixed(digits))
+    applySltp(sl, rounded)
+  }
+
+  const quickSetSl = (pips: number) => {
+    const target = isBuy ? entry - pips * pip : entry + pips * pip
+    const rounded = Number(target.toFixed(digits))
+    applySltp(rounded, tp)
+  }
 
   return (
-    <div className="rounded-md bg-bg/80 backdrop-blur border border-border-subtle px-2.5 py-1.5 text-2xs shadow-card">
-      <div className="flex items-center gap-2 flex-wrap tabular">
-        <span className={`inline-flex items-center gap-0.5 font-semibold ${isBuy ? 'text-success' : 'text-danger'}`}>
-          {isBuy ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {isBuy ? 'BUY' : 'SELL'} {toNum(pos.lot_size)}
-        </span>
-        <span className="text-text-muted">Entry <span className="text-text">{fmtPrice(entry, digits)}</span></span>
-        <span className="text-text-muted">Live <span className="text-text">{live ? fmtPrice(live, digits) : '—'}</span></span>
-        {sl !== null && <span className="text-text-muted">SL <span className="text-danger">{fmtPrice(sl, digits)}</span></span>}
-        {tp !== null && <span className="text-text-muted">TP <span className="text-success">{fmtPrice(tp, digits)}</span></span>}
-        <span className={`font-semibold ${pnlClass(pnl)}`}>{fmtUSD(pnl, { sign: true })}</span>
+    <motion.div
+      drag
+      dragElastic={0.05}
+      dragMomentum={false}
+      className="rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/80 p-2.5 text-2xs shadow-2xl select-none cursor-grab active:cursor-grabbing w-64 space-y-2 pointer-events-auto border-l-4 border-l-accent"
+    >
+      {/* Position Header Info */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 font-semibold">
+          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold ${isBuy ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}>
+            {isBuy ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+            {isBuy ? 'BUY' : 'SELL'} {toNum(pos.lot_size)}
+          </span>
+          <span className="text-gray-300 font-mono">@{fmtPrice(entry, digits)}</span>
+        </div>
+        <div className={`font-bold font-mono text-xs ${pnlClass(pnl)}`}>
+          {fmtUSD(pnl, { sign: true })}
+        </div>
       </div>
-    </div>
+
+      {/* Interactive Quick SL / TP Adjust Bars */}
+      <div className="space-y-1.5 pt-1 border-t border-slate-800 text-[11px] font-mono">
+        {/* TP Line */}
+        <div className="flex items-center justify-between gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2 py-1">
+          <span className="text-emerald-400 font-bold text-[10px]">TP:</span>
+          <span className="text-emerald-200 font-medium text-[10px] truncate">{tp ? fmtPrice(tp, digits) : 'None'}</span>
+          <div className="flex items-center gap-1 ml-auto shrink-0">
+            {[20, 50, 100].map((pips) => (
+              <button
+                key={pips}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); quickSetTp(pips) }}
+                disabled={saving}
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer active:scale-95"
+                title={`Set Take Profit at +${pips} pips`}
+              >
+                +{pips}p
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* SL Line */}
+        <div className="flex items-center justify-between gap-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2 py-1">
+          <span className="text-rose-400 font-bold text-[10px]">SL:</span>
+          <span className="text-rose-200 font-medium text-[10px] truncate">{sl ? fmtPrice(sl, digits) : 'None'}</span>
+          <div className="flex items-center gap-1 ml-auto shrink-0">
+            {[15, 25, 50].map((pips) => (
+              <button
+                key={pips}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); quickSetSl(pips) }}
+                disabled={saving}
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer active:scale-95"
+                title={`Set Stop Loss at -${pips} pips`}
+              >
+                -{pips}p
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
   )
 }

@@ -85,3 +85,30 @@ export function playOrderCloseSound() {
     /* Ignore audio policy errors */
   }
 }
+
+export function playSltpUpdatedSound() {
+  const ctx = getAudioContext()
+  if (!ctx) return
+
+  try {
+    const now = ctx.currentTime
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(659.25, now) // E5
+    osc.frequency.setValueAtTime(880, now + 0.06) // A5
+
+    gain.gain.setValueAtTime(0.06, now)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
+
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    osc.start(now)
+    osc.stop(now + 0.18)
+  } catch {
+    /* Ignore audio policy errors */
+  }
+}
+
