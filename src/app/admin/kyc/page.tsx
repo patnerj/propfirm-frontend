@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { apiUrl } from '@/lib/fxsim'
+import { apiUrl, getSession } from '@/lib/fxsim'
 import type { KycSubmission } from '@/types/api'
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
@@ -57,8 +57,19 @@ function KycDocViewer({
     const fetchDoc = async () => {
       try {
         const fullUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
+        const session = getSession()
+        const headers: Record<string, string> = {}
+        if (session.bearer) {
+          headers['Authorization'] = `Bearer ${session.bearer}`
+          headers['X-FXSIM-Token'] = session.bearer
+        }
+        if (session.nonce) {
+          headers['X-WP-Nonce'] = session.nonce
+        }
+
         const res = await fetch(fullUrl, {
           credentials: 'include',
+          headers,
         })
         if (!res.ok) {
           throw new Error(`Document fetch returned HTTP ${res.status}`)

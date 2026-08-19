@@ -31,9 +31,22 @@ const DOC_META = [
 ]
 type DocKey = (typeof DOC_META)[number]['key']
 
+function getDocHeaders() {
+  const session = getSession()
+  const headers: Record<string, string> = {}
+  if (session.bearer) {
+    headers['Authorization'] = `Bearer ${session.bearer}`
+    headers['X-FXSIM-Token'] = session.bearer
+  }
+  if (session.nonce) {
+    headers['X-WP-Nonce'] = session.nonce
+  }
+  return headers
+}
+
 async function openDoc(relativePath: string) {
   try {
-    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: getDocHeaders() })
     if (!res.ok) throw new Error(String(res.status))
     const blob = await res.blob()
     const obj = URL.createObjectURL(blob)
@@ -46,7 +59,7 @@ async function openDoc(relativePath: string) {
 
 async function downloadDoc(relativePath: string, label: string) {
   try {
-    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+    const res = await fetch(apiUrl(relativePath), { credentials: 'include', headers: getDocHeaders() })
     if (!res.ok) throw new Error(String(res.status))
     const blob = await res.blob()
     const type = blob.type || ''
@@ -154,7 +167,7 @@ function ReviewDialog({ row, onClose, onDone }: { row: AdminKycRow; onClose: () 
     if (preview && preview.key === key) { URL.revokeObjectURL(preview.url); setPreview(null); return }
     setPreviewLoading(key)
     try {
-      const res = await fetch(url, { credentials: 'include', headers: { 'X-WP-Nonce': getSession().nonce || '' } })
+      const res = await fetch(url, { credentials: 'include', headers: getDocHeaders() })
       if (!res.ok) throw new Error(String(res.status))
       const blob = await res.blob()
       if (preview) URL.revokeObjectURL(preview.url)
