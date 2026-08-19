@@ -56,21 +56,22 @@ function KycDocViewer({
 
     const fetchDoc = async () => {
       try {
-        const fullUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
         const session = getSession()
-        const headers: Record<string, string> = {}
-        if (session.bearer) {
-          headers['Authorization'] = `Bearer ${session.bearer}`
-          headers['X-FXSIM-Token'] = session.bearer
-        }
-        if (session.nonce) {
-          headers['X-WP-Nonce'] = session.nonce
+
+        // Build the proxy URL — same-origin so no CORS preflight at all.
+        // docPath is like "/admin/kyc/3/doc/id_doc" — extract id + type.
+        let proxyUrl: string
+
+        const match = docPath.match(/\/admin\/kyc\/(\d+)\/doc\/([^/]+)/)
+        if (match && session.bearer) {
+          const [, kycId, docType] = match
+          proxyUrl = `/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}&token=${encodeURIComponent(session.bearer)}`
+        } else {
+          // Fallback: try direct fetch (may fail due to CORS, but best-effort)
+          proxyUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
         }
 
-        const res = await fetch(fullUrl, {
-          credentials: 'include',
-          headers,
-        })
+        const res = await fetch(proxyUrl, { cache: 'no-store' })
         if (!res.ok) {
           throw new Error(`Document fetch returned HTTP ${res.status}`)
         }
