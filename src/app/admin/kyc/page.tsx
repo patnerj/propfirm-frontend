@@ -239,7 +239,7 @@ export default function KycHubPage() {
   // Review Modal State
   const [selectedKyc, setSelectedKyc] = useState<KycSubmission | null>(null)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
-  const [activeDocTab, setActiveDocTab] = useState<'front' | 'selfie' | 'address'>('front')
+  const [activeDocTab, setActiveDocTab] = useState<'front' | 'back' | 'selfie' | 'address'>('front')
   const [rejectionNote, setRejectionNote] = useState('')
   const [allowForceOverride, setAllowForceOverride] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
@@ -277,10 +277,11 @@ export default function KycHubPage() {
     },
   })
 
-  // Helper functions for document extraction (3 standardized KYC files)
-  const getDocUrl = (kyc: KycSubmission | null, tab: 'front' | 'selfie' | 'address'): string | null => {
+  // Helper functions for document extraction (4 synchronized KYC files: Front ID, Back ID, Selfie, Address)
+  const getDocUrl = (kyc: KycSubmission | null, tab: 'front' | 'back' | 'selfie' | 'address'): string | null => {
     if (!kyc) return null
     if (tab === 'front') return kyc.id_doc || kyc.docs?.id_doc || null
+    if (tab === 'back') return kyc.id_doc_back || kyc.docs?.id_doc_back || null
     if (tab === 'selfie') return kyc.selfie || kyc.docs?.selfie || null
     if (tab === 'address') return kyc.address_doc || kyc.docs?.address_doc || null
     return null
@@ -289,6 +290,7 @@ export default function KycHubPage() {
   const getDocCount = (kyc: KycSubmission): number => {
     let count = 0
     if (kyc.id_doc || kyc.docs?.id_doc) count++
+    if (kyc.id_doc_back || kyc.docs?.id_doc_back) count++
     if (kyc.selfie || kyc.docs?.selfie) count++
     if (kyc.address_doc || kyc.docs?.address_doc) count++
     return count
@@ -627,13 +629,13 @@ export default function KycHubPage() {
               </div>
               <div>
                 <span className="text-gray-500 block text-[10px] uppercase">Attached Files</span>
-                <span className={`font-bold ${getDocCount(selectedKyc) === 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {getDocCount(selectedKyc)} / 3 Uploaded {getDocCount(selectedKyc) === 3 ? '(Complete)' : ''}
+                <span className={`font-bold ${getDocCount(selectedKyc) === 4 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {getDocCount(selectedKyc)} / 4 Uploaded {getDocCount(selectedKyc) === 4 ? '(Complete)' : ''}
                 </span>
               </div>
             </div>
 
-            {/* Document Navigation Tabs (3 Synchronized Files) */}
+            {/* Document Navigation Tabs (4 Synchronized Files) */}
             <div className="flex items-center gap-2 border-b border-[#1F2937] pb-2 overflow-x-auto">
               <button
                 type="button"
@@ -645,8 +647,26 @@ export default function KycHubPage() {
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" /> 
-                1. Government ID
+                1. ID Front
                 {getDocUrl(selectedKyc, 'front') ? (
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDocTab('back')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                  activeDocTab === 'back'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" /> 
+                2. ID Back
+                {getDocUrl(selectedKyc, 'back') ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 ) : (
                   <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
@@ -663,7 +683,7 @@ export default function KycHubPage() {
                 }`}
               >
                 <Camera className="h-3.5 w-3.5" /> 
-                2. Biometric Selfie
+                3. Biometric Selfie
                 {getDocUrl(selectedKyc, 'selfie') ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 ) : (
@@ -681,7 +701,7 @@ export default function KycHubPage() {
                 }`}
               >
                 <MapPin className="h-3.5 w-3.5" /> 
-                3. Proof of Address
+                4. Proof of Address
                 {getDocUrl(selectedKyc, 'address') ? (
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 ) : (

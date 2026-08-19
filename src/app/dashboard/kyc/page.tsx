@@ -18,7 +18,7 @@ import {
   Sparkles, Check, ArrowRight, ShieldAlert, FileX, Info, ExternalLink
 } from 'lucide-react'
 
-type DocKey = 'id_doc' | 'selfie' | 'address_doc'
+type DocKey = 'id_doc' | 'id_doc_back' | 'selfie' | 'address_doc'
 interface DocSpec { 
   key: DocKey
   title: string
@@ -30,9 +30,16 @@ interface DocSpec {
 const DOCS: DocSpec[] = [
   { 
     key: 'id_doc',      
-    title: 'Government-Issued ID',     
-    subtitle: 'Passport, National ID or Driver’s License',
-    hint: 'Ensure all 4 corners are visible with no glare or obstruction.', 
+    title: 'Government ID (Front)',     
+    subtitle: 'Passport photo page, National ID or Driver’s License (Front)',
+    hint: 'Ensure all 4 corners and photo are clearly visible with no glare.', 
+    icon: IdCard 
+  },
+  { 
+    key: 'id_doc_back',      
+    title: 'Government ID (Back)',     
+    subtitle: 'National ID, Driver’s License (Back) or Passport Cover',
+    hint: 'Ensure barcode, issue info, and signature line are clear.', 
     icon: IdCard 
   },
   { 
@@ -291,11 +298,13 @@ export default function KycPage() {
 
   const [files, setFiles] = useState<Record<DocKey, File | null>>({
     id_doc: null,
+    id_doc_back: null,
     selfie: null,
     address_doc: null,
   })
   const [previews, setPreviews] = useState<Record<DocKey, string | null>>({
     id_doc: null,
+    id_doc_back: null,
     selfie: null,
     address_doc: null,
   })
@@ -322,21 +331,22 @@ export default function KycPage() {
   }
 
   const uploadedCount = Object.values(files).filter(Boolean).length
-  const allReady = !!(files.id_doc && files.selfie && files.address_doc)
+  const allReady = !!(files.id_doc && files.id_doc_back && files.selfie && files.address_doc)
 
   const submit = async () => {
     if (!allReady) return
     setSubmitting(true)
     const form = new FormData()
     form.append('id_doc', files.id_doc!)
+    form.append('id_doc_back', files.id_doc_back!)
     form.append('selfie', files.selfie!)
     form.append('address_doc', files.address_doc!)
     const res = await api.kycSubmit(form)
     setSubmitting(false)
     if (res.ok && res.data.success) {
       toast.success('KYC documents submitted successfully for compliance review!')
-      setFiles({ id_doc: null, selfie: null, address_doc: null })
-      setPreviews({ id_doc: null, selfie: null, address_doc: null })
+      setFiles({ id_doc: null, id_doc_back: null, selfie: null, address_doc: null })
+      setPreviews({ id_doc: null, id_doc_back: null, selfie: null, address_doc: null })
       refetch()
     } else {
       toast.error(res.ok ? res.data.message || 'Submission failed' : res.error)
@@ -420,7 +430,7 @@ export default function KycPage() {
                             </Badge>
                           </div>
                           <p className="text-xs text-gray-300 mt-1">
-                            Your 3 verified documents are currently with our compliance officer. Expected turnaround: 1–2 business days.
+                            Your 4 verified documents (Front ID, Back ID, Selfie, Proof of Address) are currently with our compliance officer. Expected turnaround: 1–2 business days.
                           </p>
                         </div>
                       </div>
@@ -435,9 +445,9 @@ export default function KycPage() {
                     {/* Received Documents Grid */}
                     <div>
                       <span className="text-xs uppercase tracking-wider text-gray-400 font-mono block mb-3 font-semibold">
-                        Received & Audited Files (3 of 3)
+                        Received & Audited Files (4 of 4)
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         {DOCS.map((d) => (
                           <div
                             key={d.key}
@@ -482,18 +492,18 @@ export default function KycPage() {
             {showForm && (
               <div className="grid lg:grid-cols-12 gap-6 items-start">
                 
-                {/* Left Side: 3 Document Upload Slots */}
+                {/* Left Side: 4 Document Upload Slots in 2x2 Grid */}
                 <div className="lg:col-span-7 space-y-4">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">
-                      Required Identity Documents (3)
+                      Required Identity Documents (4)
                     </span>
                     <span className="text-xs font-mono text-cyan-400">
-                      {uploadedCount} of 3 Files Selected
+                      {uploadedCount} of 4 Files Selected
                     </span>
                   </div>
 
-                  <div className="space-y-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {DOCS.map((d) => (
                       <ModernUploadTile
                         key={d.key}
