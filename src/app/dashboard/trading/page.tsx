@@ -41,7 +41,14 @@ export default function TradingTerminalPage() {
 
   // Real-time state from store
   const account   = usePrices((s) => s.account as Account | NoChallengeResp | null)
-  const positions = usePrices((s) => s.positions)
+  const rawPositions = usePrices((s) => s.positions)
+  const optimisticPositions = usePrices((s) => s.optimisticPositions)
+  const positions = useMemo(() => {
+    if (!rawPositions && (!optimisticPositions || optimisticPositions.length === 0)) return rawPositions
+    const real = rawPositions || []
+    const opt = (optimisticPositions || []).filter(o => !real.some(r => r.id === o.id))
+    return [...opt, ...real]
+  }, [rawPositions, optimisticPositions])
   const pending   = usePrices((s) => s.pending)
   
   // Local state for challenges fallback

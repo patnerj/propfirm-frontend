@@ -221,7 +221,10 @@ export const usePrices = create<PriceState>((set, get) => {
       ])
       const patch: Partial<PriceState> = {}
       if (acc.ok) patch.account = toAccount(acc)
-      if (pos.ok) patch.positions = pos.data
+      if (pos.ok) {
+        patch.positions = pos.data
+        set({ optimisticPositions: [] })
+      }
       if (pen.ok) patch.pending = pen.data
       stableSet(patch)
     },

@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler } from 'lucide-react'
+import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler, GripVertical } from 'lucide-react'
 import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
 import { tvSymbol, tvInterval, symbolDigits, parseTvMap } from '@/lib/symbol-meta'
@@ -116,6 +116,21 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
       return
     }
     setBusy(type)
+
+    const optId = -Math.floor(Math.random() * 1000000)
+    const optPos: any = {
+      id: optId,
+      symbol: active,
+      type,
+      lot_size: lotSize,
+      open_price: type === 'buy' ? (ask || bid || 0) : (bid || ask || 0),
+      open_time: new Date().toISOString(),
+      sl: null,
+      tp: null,
+      status: 'simulated'
+    }
+    usePrices.getState().injectOptimisticPosition(optPos)
+
     const res = await api.open({
       symbol: active,
       type,
@@ -128,7 +143,9 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
       toast.success(`${type.toUpperCase()} ${lotSize} ${active} opened`)
       invalidateFxsim('/positions')
       invalidateFxsim('/account')
+      usePrices.getState().refresh()
     } else {
+      usePrices.getState().removeOptimisticPosition(optId)
       toast.error(res.ok ? (res.data.message || 'Order rejected') : res.error)
     }
   }
@@ -382,18 +399,29 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
           </div>
         )}
         
-        {/* 1-Click Trade Box (Desktop Only) */}
+        {/* 1-Click Trade Box (Draggable, default bottom-center) */}
         {!compact && ready && (
-          <div className="absolute top-3 left-3 z-[10] flex gap-1 rounded bg-bg-subtle/80 backdrop-blur border border-border-subtle p-1 shadow-md">
-            <div className="flex flex-col gap-1 items-center justify-center">
+          <motion.div 
+            drag
+            dragConstraints={wrapRef}
+            dragElastic={0.05}
+            dragMomentum={false}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[25] flex items-center gap-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1.5 shadow-2xl cursor-grab active:cursor-grabbing select-none"
+          >
+            <div className="flex items-center px-1 text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing" title="Drag to reposition panel">
+              <GripVertical className="h-4 w-4" />
+            </div>
+
+            <div className="flex flex-col gap-0.5 items-center justify-center">
               <button 
+                type="button"
                 onClick={() => handleOneClick('sell')}
                 disabled={busy !== null || !bid}
-                className="w-16 h-8 rounded bg-danger hover:bg-danger-hover text-white text-xs font-semibold tabular flex items-center justify-center disabled:opacity-50 transition-colors"
+                className="w-16 h-8 rounded-lg bg-danger hover:bg-danger-hover text-white text-xs font-semibold tabular flex items-center justify-center disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               >
                 {busy === 'sell' ? <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : (bid ? fmtPrice(bid, digits) : 'SELL')}
               </button>
-              <div className="text-[9px] font-medium text-danger tracking-widest uppercase">Sell</div>
+              <div className="text-[9px] font-bold text-danger tracking-wider uppercase">Sell</div>
             </div>
             
             <div className="flex flex-col justify-center px-1">
@@ -401,21 +429,23 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
                 type="text"
                 value={oneClickLot}
                 onChange={(e) => setOneClickLot(e.target.value.replace(/[^\d.]/g, ''))}
-                className="w-12 h-6 text-center bg-surface border border-border rounded text-xs tabular font-medium focus-ring focus:border-accent"
+                className="w-12 h-7 text-center bg-surface border border-border rounded-md text-xs tabular font-bold text-white focus-ring focus:border-accent"
               />
+              <span className="text-[8px] text-text-muted text-center uppercase tracking-tighter mt-0.5">Lots</span>
             </div>
 
-            <div className="flex flex-col gap-1 items-center justify-center">
+            <div className="flex flex-col gap-0.5 items-center justify-center">
               <button 
+                type="button"
                 onClick={() => handleOneClick('buy')}
                 disabled={busy !== null || !ask}
-                className="w-16 h-8 rounded bg-success hover:bg-success-hover text-white text-xs font-semibold tabular flex items-center justify-center disabled:opacity-50 transition-colors"
+                className="w-16 h-8 rounded-lg bg-success hover:bg-success-hover text-white text-xs font-semibold tabular flex items-center justify-center disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               >
                 {busy === 'buy' ? <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : (ask ? fmtPrice(ask, digits) : 'BUY')}
               </button>
-              <div className="text-[9px] font-medium text-success tracking-widest uppercase">Buy</div>
+              <div className="text-[9px] font-bold text-success tracking-wider uppercase">Buy</div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
