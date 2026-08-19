@@ -11,6 +11,8 @@ import { usePrices } from '@/store/prices'
 import { useQuery } from '@tanstack/react-query'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { fmtPrice, toNum, fmtUSD, fmtPct } from '@/lib/format'
+import { invalidateFxsim } from '@/lib/fxsim'
+import { playOrderCloseSound } from '@/lib/sound'
 import { symbolDigits } from '@/lib/symbol-meta'
 import type { Account, NoChallengeResp, Position, PendingOrder, ChallengeAccount, ChallengePlan, ChallengeMetrics } from '@/types/api'
 
@@ -236,6 +238,62 @@ function DesktopLayout({
     }
   }
 
+  // Collapsible order-ticket pane — defaults to open (false)
+  const [orderCollapsed, setOrderCollapsed] = useState(false)
+  const orderPanelRef = useRef<PanelImperativeHandle>(null)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fxsim:term:order')
+      if (saved === '1') {
+        setOrderCollapsed(true)
+        orderPanelRef.current?.collapse()
+      } else if (saved === '0') {
+        setOrderCollapsed(false)
+        orderPanelRef.current?.expand()
+      }
+    } catch {}
+  }, [])
+
+  const toggleOrder = () => {
+    const panel = orderPanelRef.current
+    if (panel) {
+      if (panel.isCollapsed()) {
+        panel.expand()
+      } else {
+        panel.collapse()
+      }
+    } else {
+      setOrderCollapsed((v) => {
+        const next = !v
+        try { localStorage.setItem('fxsim:term:order', next ? '1' : '0') } catch {}
+        return next
+      })
+    }
+  }
+
+  // Close all positions handler
+  const [isClosingAll, setIsClosingAll] = useState(false)
+  const handleCloseAll = async () => {
+    if (!positions || positions.length === 0 || isClosingAll) return
+    setIsClosingAll(true)
+    const toastId = toast.loading(`Closing ${positions.length} position(s)...`)
+    try {
+      await Promise.all(positions.map((p) => api.close(p.id)))
+      playOrderCloseSound()
+      invalidateFxsim('/positions')
+      invalidateFxsim('/account')
+      invalidateFxsim('/history')
+      await usePrices.getState().refresh()
+      toast.success(`Closed all ${positions.length} position(s)!`, { id: toastId })
+      onChanged?.()
+    } catch {
+      toast.error('Failed to close some positions.', { id: toastId })
+    } finally {
+      setIsClosingAll(false)
+    }
+  }
+
   const balance = toNum(account?.balance)
   const equity  = toNum(account?.equity)
   const used    = toNum(account?.margin_used)
@@ -345,6 +403,19 @@ function DesktopLayout({
                     )}
                   </TabButton>
 
+                  {/* 1-Click Close All Positions Button */}
+                  {tab === 'positions' && positions && positions.length > 0 && (
+                    <button
+                      onClick={handleCloseAll}
+                      disabled={isClosingAll}
+                      className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 transition-all cursor-pointer shadow-sm active:scale-95"
+                      title="Close all open positions at current market price"
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
+                      {isClosingAll ? 'Closing...' : `Close All (${positions.length})`}
+                    </button>
+                  )}
+
                   {/* Connection indicator */}
                   <div className="ml-auto flex items-center gap-2">
                     <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
@@ -376,12 +447,14 @@ function DesktopLayout({
                       </SectionErrorBoundary>
                     </div>
 
-                    {/* MT5 Bottom Telemetry Summary Row */}
+                    {/* MT5 Bottom Telemetry Summary Row with Dynamic Glow */}
                     {account && (
                       <div className="shrink-0 border-t border-border-subtle bg-bg-subtle/90 backdrop-blur px-3.5 py-1.5 flex items-center justify-between gap-4 text-xs font-mono select-none overflow-x-auto no-scrollbar">
                         <div className="flex items-center gap-4 sm:gap-6 shrink-0 text-text-muted">
                           <span>Balance: <strong className="text-white font-semibold">{fmtUSD(balance)}</strong></span>
-                          <span>Equity: <strong className="text-emerald-400 font-semibold">{fmtUSD(equity)}</strong></span>
+                          <span>
+                            Equity: <strong className={equity >= balance ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{fmtUSD(equity)}</strong>
+                          </span>
                           <span>Margin: <strong className="text-gray-200 font-medium">{fmtUSD(used)}</strong></span>
                           <span>Free Margin: <strong className="text-white font-semibold">{fmtUSD(free)}</strong></span>
                           <span>Margin Level: <strong className={level !== null && level <= 120 ? 'text-rose-400 font-bold' : 'text-gray-200'}>{level !== null ? fmtPct(level, 1) : '—'}</strong></span>
@@ -389,7 +462,7 @@ function DesktopLayout({
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-text-muted">Total P/L:</span>
-                          <span className={`font-bold tabular ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold tabular ${pnl >= 0 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'}`}>
                             {fmtUSD(pnl, { sign: true })}
                           </span>
                         </div>
@@ -406,16 +479,52 @@ function DesktopLayout({
           <div className="absolute inset-y-0 left-1.5 w-px bg-border-subtle group-hover:bg-accent transition-colors" />
         </PanelResizeHandle>
 
-        {/* Right: order ticket */}
-        <Panel defaultSize="24%" minSize="18%" maxSize="30%">
-          <aside className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col h-full min-h-0">
-            <div className="shrink-0 px-3 py-2.5 border-b border-border-subtle">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">New order</h3>
-            </div>
-            <SectionErrorBoundary>
-              <OrderTicket account={account} plan={plan} />
-            </SectionErrorBoundary>
-          </aside>
+        {/* Right: order ticket (collapsible) */}
+        <Panel
+          panelRef={orderPanelRef}
+          defaultSize="24%"
+          minSize="18%"
+          maxSize="30%"
+          collapsible={true}
+          collapsedSize="4%"
+          onResize={(size) => {
+            const isCol = size.asPercentage <= 5
+            setOrderCollapsed(isCol)
+            try { localStorage.setItem('fxsim:term:order', isCol ? '1' : '0') } catch {}
+          }}
+        >
+          {orderCollapsed ? (
+            <aside className="rounded-lg border border-border bg-surface flex flex-col items-center py-2 h-full overflow-hidden select-none">
+              <button
+                onClick={toggleOrder}
+                className="h-8 w-8 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring shrink-0"
+                aria-label="Show order ticket"
+                title="Show order ticket"
+              >
+                <PanelLeftOpen className="h-4 w-4 rotate-180" />
+              </button>
+              <span className="mt-3 text-2xs font-semibold uppercase tracking-wider text-text-faint [writing-mode:vertical-rl] whitespace-nowrap">
+                New order
+              </span>
+            </aside>
+          ) : (
+            <aside className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col h-full min-h-0">
+              <div className="shrink-0 px-3 py-2.5 border-b border-border-subtle flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">New order</h3>
+                <button
+                  onClick={toggleOrder}
+                  className="h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
+                  aria-label="Hide order ticket"
+                  title="Hide order ticket"
+                >
+                  <PanelLeftClose className="h-3.5 w-3.5 rotate-180" />
+                </button>
+              </div>
+              <SectionErrorBoundary>
+                <OrderTicket account={account} plan={plan} />
+              </SectionErrorBoundary>
+            </aside>
+          )}
         </Panel>
       </PanelGroup>
     </div>

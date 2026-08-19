@@ -16,6 +16,7 @@ import { fmtPrice, fmtUSD, toNum, fmtLots } from '@/lib/format'
 import { symbolDigits, pipSize, estimatedPipValue } from '@/lib/symbol-meta'
 import { useQuery } from '@tanstack/react-query'
 import type { Account, ChallengePlan } from '@/types/api'
+import { playOrderSuccessSound } from '@/lib/sound'
 
 type Mode = 'market' | 'pending'
 type PendingType = 'buy_limit' | 'sell_limit' | 'buy_stop' | 'sell_stop'
@@ -218,6 +219,7 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     })
     setBusy(null)
     if (res.ok && res.data.success) {
+      playOrderSuccessSound()
       toast.success(`${side.toUpperCase()} ${lotN} ${active} opened`)
       refreshUser()
       invalidateFxsim('/positions')
@@ -278,6 +280,7 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     })
     setBusy(null)
     if (res.ok && res.data.success) {
+      playOrderSuccessSound()
       toast.success(`${pendingType.replace('_', ' ')} ${lotN} ${active} placed @ ${fmtPrice(targetN, digits)}`)
       refreshUser()
       invalidateFxsim('/pending-order')

@@ -12,6 +12,7 @@ import { useTerminal } from '@/store/terminal'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/cn'
 import type { Position } from '@/types/api'
+import { playOrderCloseSound } from '@/lib/sound'
 
 interface Props {
   positions: Position[] | null
@@ -97,6 +98,7 @@ function PositionRow({ pos, index, onChanged, compact }: {
     const res = await api.close(pos.id)
     setBusy(false)
     if (res.ok && res.data.success) {
+      playOrderCloseSound()
       const pnl = toNum(res.data.pnl)
       toast.success(`Closed ${pos.symbol} · ${fmtUSD(pnl, { sign: true })}`)
       invalidateFxsim('/positions'); invalidateFxsim('/account'); invalidateFxsim('/history')
@@ -115,6 +117,7 @@ function PositionRow({ pos, index, onChanged, compact }: {
     const res = await api.partialClose(pos.id, n)
     setBusy(false)
     if (res.ok && res.data.success) {
+      playOrderCloseSound()
       toast.success(`Closed ${n} of ${pos.symbol}`)
       setShowPartial(false)
       invalidateFxsim('/positions'); invalidateFxsim('/account'); invalidateFxsim('/history')

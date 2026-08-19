@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler, GripVertical } from 'lucide-react'
+import { Maximize2, Minimize2, ArrowUp, ArrowDown, PencilRuler, GripVertical, Zap } from 'lucide-react'
 import { useTerminal } from '@/store/terminal'
 import { usePrices } from '@/store/prices'
 import { tvSymbol, tvInterval, symbolDigits, parseTvMap } from '@/lib/symbol-meta'
@@ -13,6 +13,7 @@ import { api } from '@/lib/api'
 import { invalidateFxsim } from '@/lib/fxsim'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
+import { playOrderSuccessSound } from '@/lib/sound'
 
 interface Props {
   compact?: boolean
@@ -108,6 +109,22 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
   // 1-Click Trade state
   const [oneClickLot, setOneClickLot] = useState('0.10')
   const [busy, setBusy] = useState<'buy' | 'sell' | null>(null)
+  const [showOneClick, setShowOneClick] = useState(true)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('fxsim:term:oneclick')
+      if (saved === '0') setShowOneClick(false)
+    } catch {}
+  }, [])
+
+  const toggleOneClick = () => {
+    setShowOneClick((prev) => {
+      const next = !prev
+      try { localStorage.setItem('fxsim:term:oneclick', next ? '1' : '0') } catch {}
+      return next
+    })
+  }
   
   const handleOneClick = async (type: 'buy' | 'sell') => {
     const lotSize = toNum(oneClickLot)
@@ -140,6 +157,7 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
     })
     setBusy(null)
     if (res.ok && res.data.success) {
+      playOrderSuccessSound()
       toast.success(`${type.toUpperCase()} ${lotSize} ${active} opened`)
       invalidateFxsim('/positions')
       invalidateFxsim('/account')
@@ -349,12 +367,30 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
           </button>
         )}
 
+        {/* Toggle 1-Click Floating Panel */}
+        {!compact && (
+          <button
+            onClick={toggleOneClick}
+            className={`shrink-0 ml-auto h-7 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-xs font-semibold focus-ring transition-all ${
+              showOneClick
+                ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 shadow-sm'
+                : 'text-text-muted hover:text-text hover:bg-surface-muted/50 border border-border-subtle'
+            }`}
+            title="Toggle Floating 1-Click Trading Panel"
+            aria-pressed={showOneClick}
+          >
+            <Zap className={`h-3.5 w-3.5 ${showOneClick ? 'text-emerald-400 fill-emerald-400' : ''}`} />
+            <span>1-Click</span>
+          </button>
+        )}
+
         {/* Fullscreen */}
         {!compact && (
           <button
             onClick={toggleFs}
-            className="shrink-0 ml-auto h-7 w-7 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted/50 focus-ring"
+            className="shrink-0 h-7 w-7 inline-flex items-center justify-center rounded-lg text-text-muted hover:text-text hover:bg-surface-muted/50 border border-border-subtle focus-ring transition-colors"
             aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
             {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </button>
@@ -400,7 +436,7 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
         )}
         
         {/* 1-Click Trade Box (Draggable, default bottom-center) */}
-        {!compact && ready && (
+        {!compact && ready && showOneClick && (
           <motion.div 
             drag
             dragConstraints={wrapRef}
