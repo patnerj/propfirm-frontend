@@ -56,8 +56,9 @@ export const useAuth = create<AuthState>((set, get) => ({
       set({ loading: false, error: null })
       return { ok: false, twoFactor: true, uid: (res.data as any).user_id || (res.data as any).uid }
     }
-    if (res.ok && res.data.user && res.data.nonce) {
-      setSession({ nonce: res.data.nonce })
+    if (res.ok && res.data.user) {
+      const token = (res.data as any).token || res.data.nonce
+      setSession({ nonce: res.data.nonce, bearer: token })
       // Clear any cached anonymous responses
       clearFxsimCache()
       // Defensive: clear any leftover impersonation record from a prior session.
@@ -78,7 +79,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     set({ loading: true, error: null })
     const res = await api.auth.verify2fa(uid, code)
     if (res.ok) {
-      setSession({ nonce: res.data.nonce })
+      const token = (res.data as any)?.token || res.data?.nonce
+      setSession({ nonce: res.data.nonce, bearer: token })
       clearFxsimCache()
       try {
         if (typeof window !== 'undefined') sessionStorage.removeItem('fxsim:impersonating')
@@ -96,7 +98,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     set({ loading: true, error: null })
     const res = await api.auth.register({ username, email, password, ref })
     if (res.ok) {
-      setSession({ nonce: res.data.nonce })
+      const token = (res.data as any)?.token || res.data?.nonce
+      setSession({ nonce: res.data.nonce, bearer: token })
       clearFxsimCache()
       set({ user: res.data.user, loading: false, ready: true, lastChecked: Date.now(), error: null })
       return { ok: true }

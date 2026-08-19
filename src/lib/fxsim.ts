@@ -72,10 +72,12 @@ export function setSession(next: Partial<Session>) {
           document.cookie = 'fxsim_authed=; path=/; max-age=0; SameSite=Lax;'
         }
       }
-      // Bearer tokens (API keys) are kept in memory only to prevent XSS exposure
-      if (next.bearer !== undefined && !next.bearer) {
-        // Optionally wipe it if explicitly cleared, though it's not stored in LS anymore.
-        localStorage.removeItem('fxsim:bearer')
+      if (next.bearer !== undefined) {
+        if (next.bearer) {
+          localStorage.setItem('fxsim:bearer', next.bearer)
+        } else {
+          localStorage.removeItem('fxsim:bearer')
+        }
       }
     } catch { /* private mode */ }
   }
@@ -86,11 +88,10 @@ export function hydrateSession() {
   try {
     const session = getSessionState()
     session.nonce  = localStorage.getItem('fxsim:nonce')
-    if (session.nonce) {
+    session.bearer = localStorage.getItem('fxsim:bearer')
+    if (session.nonce || session.bearer) {
       document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
     }
-    // Clean up any legacy bearer tokens from local storage
-    localStorage.removeItem('fxsim:bearer')
   } catch { /* private mode */ }
 }
 
