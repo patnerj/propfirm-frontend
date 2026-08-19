@@ -143,67 +143,77 @@ export default function TradersHubPage() {
     staleTime: 10000,
   })
 
-  // Normalize authentic API data — only include genuine traders with actual accounts
+  // Normalize authentic API data — show all registered users, linking their challenges if present
   const allTraders: TraderRowItem[] = useMemo(() => {
-    // 1. If challengesData has records, map directly from challengesData
-    if (challengesData && Array.isArray(challengesData) && challengesData.length > 0) {
-      return challengesData.map((c: any) => {
-        const user = (usersData?.data || []).find((u: any) => u.user_id === c.user_id)
-        const startingBal = Number(c.starting_balance || 100000)
-        const currentBal = Number(c.current_balance || c.balance || startingBal)
-        const currentEq = Number(c.equity || currentBal)
-        const phaseNum = Number(c.phase || 1)
-        const isFunded = c.status === 'funded' || phaseNum === 3
+    const rawUsers = usersData?.data || []
+    const rawChallenges = Array.isArray(challengesData) ? challengesData : []
 
-        return {
-          id: c.id,
-          user_id: c.user_id || c.id,
-          name: user?.user_login || c.username || `Trader #${c.user_id || c.id}`,
-          username: user?.user_login || c.username || `trader_${c.user_id || c.id}`,
-          email: user?.user_email || c.user_email || `trader_${c.user_id || c.id}@propfirm.com`,
-          account_id: c.account_id ? String(c.account_id) : String(c.id),
-          plan_name: c.plan_name || '$100K Stellar 2-Step',
-          phase: phaseNum,
-          phase_name: isFunded ? 'Funded Pro' : `Phase ${phaseNum}`,
-          status: c.status || (isFunded ? 'funded' : 'active'),
-          balance: currentBal,
-          equity: currentEq,
-          starting_balance: startingBal,
-          kyc_status: (c.kyc_status || (user as any)?.kyc_status || 'unverified') as any,
-          created_at: c.created_at || (user as any)?.user_registered || new Date().toISOString(),
-          profit_split: Number(c.funded_profit_split || 80),
-          max_daily_loss: Number(c.max_daily_loss_pct || 5),
-          max_total_loss: Number(c.max_total_loss_pct || 10),
-          min_days: Number(c.min_trading_days || 5),
-          news_trading: Boolean(c.news_trading ?? true),
-          weekend_holding: Boolean(c.weekend_holding ?? false),
-        }
-      })
+    if (rawUsers.length === 0 && rawChallenges.length === 0) return []
+
+    // Index challenges by user_id
+    const challengesByUser = new Map<number, any[]>()
+    for (const c of rawChallenges) {
+      const uid = Number(c.user_id || c.id)
+      if (!challengesByUser.has(uid)) challengesByUser.set(uid, [])
+      challengesByUser.get(uid)!.push(c)
     }
 
-    // 2. Otherwise if usersData has users with actual accounts (account_id is not null)
-    if (usersData?.data && Array.isArray(usersData.data) && usersData.data.length > 0) {
-      const genuineTraders = usersData.data.filter((u: any) => 
-        (u.account_id && u.status !== 'no_account') || (Number(u.active_challenges) > 0) || (Number(u.funded_challenges) > 0)
-      )
+    const rows: TraderRowItem[] = []
 
-      return genuineTraders.map((u: any) => {
-        const startingBal = u.starting_balance ? Number(u.starting_balance) : 100000
-        const currentBal = u.balance ? Number(u.balance) : startingBal
-        const currentEq = u.equity ? Number(u.equity) : currentBal
-        const phaseNum = u.funded_challenges > 0 ? 3 : 1
+    // 1. Process all registered users from database
+    for (const u of rawUsers) {
+      const uid = Number(u.user_id)
+      const userChallenges = challengesByUser.get(uid) || []
 
-        return {
-          id: u.user_id,
-          user_id: u.user_id,
-          name: u.user_login || `Trader #${u.user_id}`,
-          username: u.user_login || `trader_${u.user_id}`,
-          email: u.user_email || `trader_${u.user_id}@example.com`,
-          account_id: String(u.account_id || u.user_id),
-          plan_name: u.plan_name || '$100K Stellar 2-Step',
-          phase: phaseNum,
-          phase_name: phaseNum === 3 ? 'Funded' : `Phase ${phaseNum}`,
-          status: u.status || 'active',
+      if (userChallenges.length > 0) {
+        for (const c of userChallenges) {
+          const startingBal = Number(c.starting_balance || 100000)
+          const currentBal = Number(c.current_balance || c.balance || startingBal)
+          const currentEq = Number(c.equity || currentBal)
+          const phaseNum = Number(c.phase || 1)
+          const isFunded = c.status === 'funded' || phaseNum === 3
+
+          rows.push({
+            id: Number(c.id),
+            user_id: uid,
+            name: u.user_login || c.username || `Trader #${uid}`,
+            username: u.user_login || c.username || `trader_${uid}`,
+            email: u.user_email || c.user_email || `trader_${uid}@propfirm.com`,
+            account_id: c.account_id ? String(c.account_id) : String(c.id),
+            plan_name: c.plan_name || '$100K Stellar 2-Step',
+            phase: phaseNum,
+            phase_name: isFunded ? 'Funded Pro' : `Phase ${phaseNum}`,
+            status: c.status || (isFunded ? 'funded' : 'active'),
+            balance: currentBal,
+            equity: currentEq,
+            starting_balance: startingBal,
+            kyc_status: (c.kyc_status || u.kyc_status || 'unverified') as any,
+            created_at: c.created_at || u.user_registered || new Date().toISOString(),
+            profit_split: Number(c.funded_profit_split || 80),
+            max_daily_loss: Number(c.max_daily_loss_pct || 5),
+            max_total_loss: Number(c.max_total_loss_pct || 10),
+            min_days: Number(c.min_trading_days || 5),
+            news_trading: Boolean(c.news_trading ?? true),
+            weekend_holding: Boolean(c.weekend_holding ?? false),
+          })
+        }
+      } else {
+        // Registered user who hasn't bought/started a challenge yet
+        const startingBal = Number(u.starting_balance || 0)
+        const currentBal = Number(u.balance || 0)
+        const currentEq = Number(u.equity || 0)
+
+        rows.push({
+          id: uid,
+          user_id: uid,
+          name: u.user_login || `Trader #${uid}`,
+          username: u.user_login || `trader_${uid}`,
+          email: u.user_email || `trader_${uid}@example.com`,
+          account_id: u.account_id ? String(u.account_id) : String(uid),
+          plan_name: u.plan_name || 'No Active Challenge',
+          phase: 0,
+          phase_name: 'Registered',
+          status: u.status === 'banned' ? 'banned' : (u.status === 'no_account' ? 'registered' : (u.status || 'active')),
           balance: currentBal,
           equity: currentEq,
           starting_balance: startingBal,
@@ -215,11 +225,11 @@ export default function TradersHubPage() {
           min_days: 5,
           news_trading: true,
           weekend_holding: false,
-        }
-      })
+        })
+      }
     }
 
-    return []
+    return rows
   }, [usersData, challengesData])
 
   // Filtered dataset
@@ -241,6 +251,7 @@ export default function TradersHubPage() {
         if (statusFilter === 'funded' && trader.status !== 'funded' && trader.phase !== 3) return false
         if (statusFilter === 'violated' && trader.status !== 'violated' && trader.status !== 'failed') return false
         if (statusFilter === 'banned' && trader.status !== 'banned' && trader.status !== 'suspended') return false
+        if (statusFilter === 'registered' && trader.phase !== 0 && trader.status !== 'registered') return false
       }
 
       // 3. KYC Status filter
@@ -265,9 +276,6 @@ export default function TradersHubPage() {
 
   const handleToggleBan = async (trader: TraderRowItem) => {
     const isCurrentlyBanned = trader.status === 'banned' || trader.status === 'suspended'
-    // Backend admin_set_status only accepts active|frozen|banned — 'suspended'
-    // was silently rejected with a 400, but since fxsim() resolves {ok:false}
-    // instead of throwing, the old code fell straight through to a success toast.
     const newStatus = isCurrentlyBanned ? 'active' : 'banned'
 
     try {
@@ -375,6 +383,7 @@ export default function TradersHubPage() {
         const isViolated = row.status === 'violated' || row.status === 'failed'
         const isBanned = row.status === 'banned' || row.status === 'suspended'
         const isPhase2 = row.phase === 2
+        const isRegisteredOnly = row.phase === 0 || row.status === 'registered' || row.status === 'no_account'
 
         return (
           <div className="space-y-1">
@@ -388,6 +397,8 @@ export default function TradersHubPage() {
                 <Badge tone="success" size="sm" pulsing>Funded Live</Badge>
               ) : isPhase2 ? (
                 <Badge tone="info" size="sm">Phase 2 Verification</Badge>
+              ) : isRegisteredOnly ? (
+                <Badge tone="neutral" size="sm">Registered</Badge>
               ) : (
                 <Badge tone="accent" size="sm" pulsing>Phase 1 Evaluation</Badge>
               )}
@@ -401,6 +412,9 @@ export default function TradersHubPage() {
       header: 'Balance / Equity',
       align: 'right',
       render: (row) => {
+        if (row.starting_balance === 0 && row.balance === 0) {
+          return <span className="text-xs text-gray-500 font-mono">—</span>
+        }
         const pnl = row.equity - row.starting_balance
         const isProfit = pnl >= 0
         return (

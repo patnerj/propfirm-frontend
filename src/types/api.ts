@@ -702,6 +702,9 @@ export interface AdminUserRow {
   account_id:        number | null
   active_challenges: number
   funded_challenges: number
+  kyc_status?:       string
+  plan_name?:        string
+  starting_balance?: number | string
 }
 
 export interface AdminRisk {
