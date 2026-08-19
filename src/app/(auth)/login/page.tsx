@@ -52,13 +52,19 @@ function LoginForm() {
   const [code, setCode] = useState('')
 
   useEffect(() => {
-    if (ready && user) router.replace(user.is_admin && next === '/dashboard' ? '/dashboard/admin' : next)
-  }, [ready, user, router, next])
+    if (ready && user) {
+      document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
+      const target = user.is_admin && next === '/dashboard' ? '/dashboard/admin' : next
+      window.location.href = target
+    }
+  }, [ready, user, next])
 
   const finishLogin = () => {
     toast.success('Welcome back')
+    document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
     const u = useAuth.getState().user
-    router.replace(u?.is_admin && next === '/dashboard' ? '/dashboard/admin' : next)
+    const target = u?.is_admin && next === '/dashboard' ? '/dashboard/admin' : next
+    window.location.href = target
   }
 
   async function submit(e: FormEvent) {

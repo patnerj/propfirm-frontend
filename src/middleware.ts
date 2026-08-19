@@ -4,8 +4,9 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  // Check if fxsim_authed session flag cookie exists
-  const hasAuthCookie = request.cookies.get('fxsim_authed')?.value === '1'
+  // Check if fxsim_authed session flag cookie exists OR WordPress auth cookie
+  const cookies = request.cookies.getAll()
+  const hasAuthCookie = request.cookies.get('fxsim_authed')?.value === '1' || cookies.some(c => c.name.startsWith('wordpress_logged_in_'))
 
   // Protect /admin routes
   if (path === '/admin' || path.startsWith('/admin/')) {
