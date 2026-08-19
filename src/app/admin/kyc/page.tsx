@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { apiUrl } from '@/lib/fxsim'
 import type { KycSubmission } from '@/types/api'
 import { 
   Card, CardContent, CardHeader, CardTitle, CardDescription 
@@ -21,6 +22,214 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Label } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/Textarea'
 import { toast } from 'sonner'
+
+function KycDocViewer({ 
+  kycId, 
+  docPath, 
+  tabName 
+}: { 
+  kycId: number
+  docPath: string | null
+  tabName: string 
+}) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPdf, setIsPdf] = useState(false)
+  const [zoom, setZoom] = useState(1)
+  const [rotate, setRotate] = useState(0)
+
+  React.useEffect(() => {
+    if (!docPath) {
+      setBlobUrl(null)
+      setError(null)
+      setIsPdf(false)
+      return
+    }
+
+    let isCancelled = false
+    let currentUrl: string | null = null
+    setLoading(true)
+    setError(null)
+    setZoom(1)
+    setRotate(0)
+
+    const fetchDoc = async () => {
+      try {
+        const fullUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
+        const res = await fetch(fullUrl, {
+          credentials: 'include',
+        })
+        if (!res.ok) {
+          throw new Error(`Document fetch returned HTTP ${res.status}`)
+        }
+        const contentType = res.headers.get('content-type') || ''
+        const blob = await res.blob()
+        if (isCancelled) return
+
+        const url = URL.createObjectURL(blob)
+        currentUrl = url
+        setBlobUrl(url)
+        setIsPdf(contentType.includes('pdf') || blob.type === 'application/pdf')
+      } catch (err: any) {
+        if (!isCancelled) {
+          setError(err?.message || 'Could not load document')
+        }
+      } finally {
+        if (!isCancelled) setLoading(false)
+      }
+    }
+
+    fetchDoc()
+
+    return () => {
+      isCancelled = true
+      if (currentUrl) URL.revokeObjectURL(currentUrl)
+    }
+  }, [docPath])
+
+  if (!docPath) {
+    return (
+      <div className="text-center space-y-2 py-8 text-gray-500">
+        <div className="h-12 w-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+          <FileX className="h-6 w-6" />
+        </div>
+        <p className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+          {tabName === 'back' ? 'Optional Back ID: Not Uploaded' : `No Document Uploaded: ${tabName.toUpperCase()}`}
+        </p>
+        <p className="text-[11px] font-mono text-gray-500 max-w-sm mx-auto">
+          {tabName === 'back' 
+            ? 'Single-sided ID / Passport submitted. Back ID was not required or provided.' 
+            : 'The trader has not submitted a file for this document category yet.'}
+        </p>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3 text-emerald-400">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="text-xs font-mono text-gray-400">Loading verified document...</span>
+      </div>
+    )
+  }
+
+  if (error || !blobUrl) {
+    return (
+      <div className="text-center space-y-2 py-8 text-red-400">
+        <AlertTriangle className="h-8 w-8 mx-auto" />
+        <p className="text-xs font-bold uppercase">Failed to load document preview</p>
+        <p className="text-[11px] font-mono text-gray-400 max-w-sm mx-auto">{error || 'Unknown error'}</p>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={() => window.open(apiUrl(docPath), '_blank')}
+          className="border-red-500/30 text-xs text-red-300 hover:bg-red-500/10 gap-1.5 mt-2"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Attempt Direct Download
+        </Button>
+      </div>
+    )
+  }
+
+  if (isPdf) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-4 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+          <FileText className="h-8 w-8" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-white">PDF Document Attached</p>
+          <p className="text-xs text-gray-400 font-mono mt-1">Official Proof of Address / Identity PDF</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            asChild 
+            size="sm" 
+            className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+          >
+            <a href={blobUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              Open PDF in New Window
+            </a>
+          </Button>
+          <Button 
+            asChild 
+            variant="outline" 
+            size="sm" 
+            className="border-gray-700 text-gray-300 gap-2"
+          >
+            <a href={blobUrl} download={`kyc_${kycId}_${tabName}.pdf`}>
+              <Download className="h-4 w-4" />
+              Download
+            </a>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative flex flex-col items-center justify-center w-full h-full min-h-[320px]">
+      {/* Zoom / Rotate Toolbar */}
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-black/70 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 text-xs">
+        <button 
+          onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
+          className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10"
+          title="Zoom Out"
+        >
+          -
+        </button>
+        <span className="font-mono text-[10px] text-emerald-400 px-1">{Math.round(zoom * 100)}%</span>
+        <button 
+          onClick={() => setZoom(z => Math.min(3, z + 0.25))}
+          className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10"
+          title="Zoom In"
+        >
+          +
+        </button>
+        <div className="h-3 w-px bg-white/20 mx-1" />
+        <button 
+          onClick={() => setRotate(r => (r + 90) % 360)}
+          className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10"
+          title="Rotate 90°"
+        >
+          ↻
+        </button>
+        <button 
+          onClick={() => { setZoom(1); setRotate(0) }}
+          className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10"
+          title="Reset"
+        >
+          Reset
+        </button>
+        <a 
+          href={blobUrl} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="p-1 text-gray-300 hover:text-white rounded hover:bg-white/10 ml-1"
+          title="Full Resolution"
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+
+      <div className="w-full h-full flex items-center justify-center overflow-auto p-2">
+        <img 
+          src={blobUrl} 
+          alt={tabName} 
+          style={{ 
+            transform: `scale(${zoom}) rotate(${rotate}deg)`,
+            transition: 'transform 0.2s ease-in-out'
+          }}
+          className="max-h-[360px] max-w-full object-contain rounded-lg shadow-2xl select-none pointer-events-auto"
+        />
+      </div>
+    </div>
+  )
+}
 
 export default function KycHubPage() {
   const queryClient = useQueryClient()
@@ -502,26 +711,12 @@ export default function KycHubPage() {
             </div>
 
             {/* Document Visualizer Canvas */}
-            <div className="relative aspect-[16/9] w-full rounded-2xl border-2 border-dashed border-[#1F2937] bg-[#0B0F19] overflow-hidden flex flex-col items-center justify-center p-4">
-              {currentDocUrl ? (
-                <img 
-                  src={currentDocUrl} 
-                  alt={activeDocTab} 
-                  className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
-                />
-              ) : (
-                <div className="text-center space-y-2 py-6 text-gray-500">
-                  <div className="h-12 w-12 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
-                    <FileX className="h-6 w-6" />
-                  </div>
-                  <p className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-                    No Document Uploaded: {activeDocTab.toUpperCase()}
-                  </p>
-                  <p className="text-[11px] font-mono text-gray-500 max-w-sm mx-auto">
-                    The trader has not submitted a file for this document category yet.
-                  </p>
-                </div>
-              )}
+            <div className="relative aspect-[16/9] w-full rounded-2xl border-2 border-[#1F2937] bg-[#0B0F19] overflow-hidden flex flex-col items-center justify-center p-4">
+              <KycDocViewer 
+                kycId={selectedKyc.id} 
+                docPath={currentDocUrl} 
+                tabName={activeDocTab} 
+              />
             </div>
 
             {/* Rejection Note Textarea */}
