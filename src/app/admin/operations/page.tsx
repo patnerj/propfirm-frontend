@@ -8,7 +8,7 @@ import {
   RefreshCw, Cpu, Zap, Radio, ShieldCheck, Power, Flame, Sparkles,
   Sliders, Save, ArrowRight, TrendingUp, AlertOctagon, Wifi, BarChart3,
   Calendar, Filter, Search, Plus, Trash2, SlidersHorizontal, Trophy, RotateCcw,
-  CheckCircle, PlayCircle, Award
+  CheckCircle, PlayCircle, Award, Copy, Terminal, ExternalLink
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -811,6 +811,75 @@ export default function OperationsHubPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* MT5 Bridge Streamer Configuration Panel */}
+                {(priceFeedForm.price_source_mode === 'auto' || priceFeedForm.price_source_mode === 'mt5') && (
+                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-950/10 space-y-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-bold text-white">MT5 Bridge Python Streamer Credentials</span>
+                      </div>
+                      <Badge tone={feedHealth?.mt5_fresh ? 'success' : 'warn'} size="sm">
+                        {feedHealth?.mt5_fresh ? '● MT5 Feed Connected' : 'Waiting for Python Streamer'}
+                      </Badge>
+                    </div>
+
+                    <p className="text-[11px] text-gray-300">
+                      The Python streamer script runs locally on your PC / VPS alongside your open MetaTrader 5 terminal to stream live institutional ticks into the platform.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Ingestion API Endpoint</span>
+                        <div className="flex items-center gap-1.5 p-2 bg-[#0B0F19] rounded-lg border border-[#1F2937] text-xs font-mono text-gray-200">
+                          <span className="truncate flex-1">https://api.launchapropfirm.com/wp-json/fxsim/v1/price-feed/ingest</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('https://api.launchapropfirm.com/wp-json/fxsim/v1/price-feed/ingest')
+                              toast.success('Ingestion endpoint copied!')
+                            }}
+                            className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors shrink-0"
+                            title="Copy Ingestion URL"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-gray-400">Feed Secret Key (`feed_key`)</span>
+                        <div className="flex items-center gap-1.5 p-2 bg-[#0B0F19] rounded-lg border border-[#1F2937] text-xs font-mono text-emerald-400">
+                          <span className="truncate flex-1">{feedHealth?.ingest_secret || 'asdf1122'}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(feedHealth?.ingest_secret || 'asdf1122')
+                              toast.success('Feed secret key copied!')
+                            }}
+                            className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors shrink-0"
+                            title="Copy Feed Key"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-[#0B0F19]/80 border border-border-subtle text-2xs text-gray-300 space-y-1">
+                      <div className="font-semibold text-emerald-400 flex items-center gap-1">
+                        <span>📁 1-Click Desktop Launcher Ready:</span>
+                      </div>
+                      <p className="text-gray-400">
+                        1. Open MetaTrader 5 Terminal and log into your broker account.<br />
+                        2. Open the <strong className="text-white">MT5-Price-Streamer</strong> folder on your Desktop.<br />
+                        3. Double-click <strong className="text-emerald-400">START_STREAMER.bat</strong>.<br />
+                        4. This monitor will immediately switch to <strong className="text-emerald-400">MT5 Bridge Live (Fresh &lt;1s)</strong>!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Stale Quote Timeout */}

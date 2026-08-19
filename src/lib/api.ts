@@ -367,6 +367,7 @@ export const api = {
       mt5_last_push_ts: number | null; mt5_age_sec: number | null; mt5_fresh: boolean;
       stale_threshold: number; yahoo_last_ts: number | null; feed_failed: boolean;
       symbol_count: number; secret_set: boolean; market_open: boolean;
+      ingest_secret?: string; ingest_url?: string;
     }>('/admin/price-feed/health'),
     forcePrices:  () => fxsim<{ success: true; message: string }>('/admin/force-prices', { method: 'POST' }),
     newsLock:     (locked: boolean) => fxsim<{ success: true; locked: boolean }>('/admin/news-lock', { body: { locked } }),
