@@ -55,16 +55,16 @@ function LoginForm() {
     if (ready && user) {
       document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
       const target = user.is_admin && next === '/dashboard' ? '/admin' : next
-      window.location.href = target
+      router.replace(target)
     }
-  }, [ready, user, next])
+  }, [ready, user, next, router])
 
   const finishLogin = () => {
     toast.success('Welcome back')
     document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
     const u = useAuth.getState().user
     const target = u?.is_admin && next === '/dashboard' ? '/admin' : next
-    window.location.href = target
+    router.replace(target)
   }
 
   async function submit(e: FormEvent) {

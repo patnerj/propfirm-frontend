@@ -51,7 +51,7 @@ export const api = {
     register: (body: { username: string; email: string; password: string; ref?: string }) =>
       fxsim<{ user: AuthUser; nonce: string }>('/auth/register', { body, public: true }),
     logout:   () => fxsim<{ success: true }>('/auth/logout', { method: 'POST' }),
-    me:       (force?: boolean) => fxsim<AuthUser>('/auth/me', { cache: force ? 0 : 30_000 }),
+    me:       (force = true) => fxsim<AuthUser>('/auth/me', { cache: 0, force: true }),
     requestReset: (login: string)   => fxsim<{ success: true; message: string }>('/auth/request-reset', { body: { login }, public: true }),
     doReset:      (key: string, login: string, password: string) =>
       fxsim<{ success: true; message: string }>('/auth/do-reset', { body: { key, login, password }, public: true }),

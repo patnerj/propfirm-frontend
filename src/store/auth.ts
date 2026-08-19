@@ -35,12 +35,12 @@ export const useAuth = create<AuthState>((set, get) => ({
   lastChecked: 0,
 
   bootstrap: async () => {
-    if (get().ready) return
+    if (get().ready && get().user) return
     if (bootstrapPromise) return bootstrapPromise
     bootstrapPromise = (async () => {
       hydrateSession()
       set({ loading: true })
-      const res = await api.auth.me()
+      const res = await api.auth.me(true)
       if (res.ok) set({ user: res.data, ready: true, loading: false, error: null, lastChecked: Date.now() })
       else        set({ user: null, ready: true, loading: false, lastChecked: Date.now() })
     })().finally(() => { bootstrapPromise = null })

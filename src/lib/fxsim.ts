@@ -296,11 +296,14 @@ async function rawFetch<T>(
     headers['Content-Type'] = 'application/json'
   }
   const currentSession = getSessionState()
-  if (!opts.public && currentSession.nonce && !headers['X-WP-Nonce']) {
-    headers['X-WP-Nonce'] = currentSession.nonce
-  }
-  if (currentSession.bearer && !headers['Authorization']) {
-    headers['Authorization'] = `Bearer ${currentSession.bearer}`
+  if (!opts.public) {
+    if (currentSession.bearer) {
+      if (!headers['Authorization']) headers['Authorization'] = `Bearer ${currentSession.bearer}`
+      if (!headers['X-FXSIM-Token'])  headers['X-FXSIM-Token'] = currentSession.bearer
+    }
+    if (currentSession.nonce && !headers['X-WP-Nonce']) {
+      headers['X-WP-Nonce'] = currentSession.nonce
+    }
   }
 
   const init: RequestInit = {
