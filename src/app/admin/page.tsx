@@ -181,12 +181,28 @@ export default function AdminCommandCenter() {
   const realisedPnl = Number(stats?.total_pnl ?? 0)
   const pendingPayoutVal = Number(riskData?.pending_payout_value ?? pendingPayoutsAmount)
 
+  // Dynamic MoM Revenue Growth
+  const revenueTrend = useMemo(() => {
+    const monthly = Array.isArray(revenue?.monthly) ? revenue.monthly : []
+    if (monthly.length >= 2) {
+      const cur = Number(monthly[monthly.length - 1]?.total || (monthly[monthly.length - 1] as any)?.amount || 0)
+      const prev = Number(monthly[monthly.length - 2]?.total || (monthly[monthly.length - 2] as any)?.amount || 0)
+      if (prev > 0) {
+        const pct = ((cur - prev) / prev) * 100
+        return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% MoM`
+      } else if (cur > 0) {
+        return '+100% MoM'
+      }
+    }
+    return totalRev > 0 ? 'Live' : '0.0%'
+  }, [revenue, totalRev])
+
   const SUMMARY_METRICS = [
     {
       title: 'Total Revenue',
       value: formatCurrency(totalRev),
       subtitle: 'Net challenge fees & add-ons',
-      trend: totalRev > 0 ? '+14.8%' : '0.0%',
+      trend: revenueTrend,
       tone: 'accent' as const,
       icon: DollarSign,
     },

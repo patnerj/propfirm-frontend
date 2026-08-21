@@ -598,7 +598,19 @@ export default function AdminTournamentsPage() {
                     Leaderboard
                   </Button>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={t.status}
+                      onChange={(e) => updateStatusMutation.mutate({ id: t.id, status: e.target.value })}
+                      className="bg-[#0B0F19] border border-[#1F2937] text-gray-300 text-[11px] font-mono rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      title="Change Status"
+                    >
+                      <option value="upcoming">Upcoming</option>
+                      <option value="active">Active</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -755,7 +767,7 @@ export default function AdminTournamentsPage() {
 
                         <td className="py-3.5 px-4">
                           <div className="font-semibold text-gray-200">{m.creator_name || 'Gladiator A'}</div>
-                          <div className="text-[10px] text-gray-500 font-mono">{m.creator_email || 'trader@propfirm.com'}</div>
+                          <div className="text-[10px] text-gray-500 font-mono">{m.creator_email || m.creator_login || (m.creator_user_id ? `User #${m.creator_user_id}` : '-')}</div>
                           <div className="text-[11px] font-mono mt-0.5 text-blue-400">
                             PnL: {Number(m.creator_pnl) >= 0 ? '+' : ''}${Number(m.creator_pnl).toFixed(2)}
                           </div>
@@ -765,7 +777,7 @@ export default function AdminTournamentsPage() {
                           <div className="font-semibold text-gray-200">
                             {m.challenger_name || (m.status === 'waiting' ? 'Waiting for Challenger...' : 'Gladiator B')}
                           </div>
-                          <div className="text-[10px] text-gray-500 font-mono">{m.challenger_email || '-'}</div>
+                          <div className="text-[10px] text-gray-500 font-mono">{m.challenger_email || m.challenger_login || (m.challenger_user_id ? `User #${m.challenger_user_id}` : '-')}</div>
                           <div className="text-[11px] font-mono mt-0.5 text-amber-400">
                             PnL: {Number(m.challenger_pnl) >= 0 ? '+' : ''}${Number(m.challenger_pnl).toFixed(2)}
                           </div>
@@ -981,15 +993,26 @@ export default function AdminTournamentsPage() {
       >
         <form onSubmit={handleFormSubmit} className="space-y-4">
           
-          <div className="space-y-1.5">
-            <Label className="text-xs">Tournament Title</Label>
-            <Input
-              placeholder="e.g. Summer Global FX Cup 2026"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="text-xs"
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Tournament Title</Label>
+              <Input
+                placeholder="e.g. Summer Global FX Cup 2026"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="text-xs"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Custom URL Slug (Optional)</Label>
+              <Input
+                placeholder="e.g. summer-global-fx-cup-2026"
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                className="text-xs font-mono"
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">

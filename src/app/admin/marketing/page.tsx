@@ -623,7 +623,7 @@ export default function MarketingHubPage() {
   const openPayoutModal = (aff: AdminAffiliate) => {
     setSelectedAffiliate(aff)
     setPayoutAmount(Number(aff.unpaid || 0))
-    setPayoutDest(aff.payment_destination || '')
+    setPayoutDest(aff.payout_destination || aff.payment_destination || '')
     setPayoutMethod('crypto')
     setPayoutNote(`Monthly commission release for affiliate #${aff.id}`)
     setIsPayoutModalOpen(true)

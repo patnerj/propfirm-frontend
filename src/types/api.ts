@@ -479,6 +479,7 @@ export interface AdminAffiliate {
   unpaid:       number
   referrals:    number
   payment_destination?: string
+  payout_destination?:  string
   payment_method?: string
 }
 
@@ -1056,9 +1057,12 @@ export interface PvpMatch {
   challenger_user_id?: number | null;
   creator_name?: string;
   creator_email?: string;
+  creator_login?: string;
   challenger_name?: string;
   challenger_email?: string;
+  challenger_login?: string;
   winner_name?: string;
+  winner_email?: string;
   creator_pnl: number | string;
   challenger_pnl: number | string;
   creator_trades_count: number;

@@ -375,7 +375,8 @@ export const api = {
     smtpGet:  () => fxsim<SmtpConfig>('/admin/smtp', { cache: 0 }),
     smtpSave: (data: Partial<SmtpConfig> & { pass?: string; auth?: boolean }) =>
       fxsim<{ success: boolean }>('/admin/smtp/save', { body: data as Record<string, unknown> }),
-    smtpTest: (to?: string) => fxsim<{ success: boolean; message?: string }>('/admin/smtp/test', { body: { to } }),
+    smtpTest: (to?: string, config?: Partial<SmtpConfig> & { pass?: string; auth?: boolean }) =>
+      fxsim<{ success: boolean; message?: string }>('/admin/smtp/test', { body: { to, ...(config || {}) } }),
     priceFeedSave: (data: Record<string, any>) => fxsim<{ success: true }>('/admin/price-feed/save', { body: data }),
     priceFeedHealth: () => fxsim<{
       mode: 'auto' | 'mt5' | 'yahoo'; active_source: string; status: string;

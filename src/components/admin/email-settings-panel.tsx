@@ -54,7 +54,7 @@ export function EmailSettingsPanel() {
 
   const sendTest = async () => {
     setTesting(true)
-    const res = await api.admin.smtpTest(testTo.trim() || undefined)
+    const res = await api.admin.smtpTest(testTo.trim() || undefined, d || undefined)
     setTesting(false)
     if (res.ok && res.data.success) toast.success('Test email sent — check the inbox (and spam folder).')
     else toast.error(res.ok ? (res.data.message || 'Test email failed — check your SMTP settings.') : res.error)

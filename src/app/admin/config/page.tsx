@@ -1199,7 +1199,7 @@ export default function ConfigurationHubPage() {
       `[${new Date().toLocaleTimeString()}] Transmitting AUTH LOGIN credentials for ${smtpForm.user}...`
     ])
     try {
-      const res = await api.admin.smtpTest(testEmailTo)
+      const res = await api.admin.smtpTest(testEmailTo, smtpForm)
       if (res.ok) {
         setSmtpHandshakeLogs((prev) => [
           ...prev,
@@ -2065,7 +2065,7 @@ export default function ConfigurationHubPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-bold text-white">Platform Media Assets & Branding</h4>
-                    <p className="text-xs text-gray-400">Directly upload SVG, PNG, WebP or ICO files with instant preview</p>
+                    <p className="text-xs text-gray-400">Directly upload PNG, JPEG, WebP or ICO files with instant preview</p>
                   </div>
                   <Badge tone="accent" size="sm">4-Asset Suite</Badge>
                 </div>
@@ -2075,7 +2075,7 @@ export default function ConfigurationHubPage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <Label className="text-xs font-semibold text-gray-200">1. Primary Brand Logo (Web & Email)</Label>
-                      <p className="text-[11px] text-gray-400">Main header and email logo, rendered 160–200px wide (Recommended: ≥400px transparent PNG/SVG)</p>
+                      <p className="text-[11px] text-gray-400">Main header and email logo, rendered 160–200px wide (Recommended: ≥400px transparent PNG/WebP)</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -2160,7 +2160,7 @@ export default function ConfigurationHubPage() {
                           </Button>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-500">Supports direct upload or absolute remote CDN URL (PNG, SVG, WebP max 2MB).</p>
+                      <p className="text-[11px] text-gray-500">Supports direct upload or absolute remote CDN URL (PNG, JPEG, WebP max 2MB).</p>
                     </div>
                   </div>
                 </div>
@@ -2169,7 +2169,7 @@ export default function ConfigurationHubPage() {
                 <div className="p-4 rounded-xl border border-[#1F2937] bg-[#0B0F19] space-y-4">
                   <div>
                     <Label className="text-xs font-semibold text-gray-200">2. Login Screen Logo</Label>
-                    <p className="text-[11px] text-gray-400">Horizontal logo on authentication / login portal (Recommended: ≥320×80px transparent PNG/SVG)</p>
+                    <p className="text-[11px] text-gray-400">Horizontal logo on authentication / login portal (Recommended: ≥320×80px transparent PNG/WebP)</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -2231,7 +2231,7 @@ export default function ConfigurationHubPage() {
                 <div className="p-4 rounded-xl border border-[#1F2937] bg-[#0B0F19] space-y-4">
                   <div>
                     <Label className="text-xs font-semibold text-gray-200">3. Sidebar Square Icon / App Mark</Label>
-                    <p className="text-[11px] text-gray-400">Square mark rendered in collapsed sidebar &amp; mobile headers (Recommended: 128×128px square PNG/SVG)</p>
+                    <p className="text-[11px] text-gray-400">Square mark rendered in collapsed sidebar &amp; mobile headers (Recommended: 128×128px square PNG/WebP)</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
@@ -2294,7 +2294,7 @@ export default function ConfigurationHubPage() {
                 {/* 4. Platform Favicon (.ico / .png) */}
                 <div className="p-4 rounded-xl border border-[#1F2937] bg-[#0B0F19] space-y-4">
                   <div>
-                    <Label className="text-xs font-semibold text-gray-200">4. Browser Tab Favicon (.ico / .png / .svg)</Label>
+                    <Label className="text-xs font-semibold text-gray-200">4. Browser Tab Favicon (.ico / .png / .webp)</Label>
                     <p className="text-[11px] text-gray-400">Updates the browser tab icon in real-time and appears in trader bookmarks (48×48px).</p>
                   </div>
 

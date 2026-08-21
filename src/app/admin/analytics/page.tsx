@@ -43,11 +43,13 @@ export default function AdminAnalyticsPage() {
 
   const isPending = isRevPending || isGrowthPending || isChallengesPending
 
-  const handleRefreshAll = () => {
-    refetchRevenue()
-    refetchGrowth()
-    refetchChallenges()
-    toast.success('Analytics intelligence metrics refreshed')
+  const handleRefreshAll = async () => {
+    try {
+      await Promise.all([refetchRevenue(), refetchGrowth(), refetchChallenges()])
+      toast.success('Analytics intelligence metrics refreshed')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to refresh analytics data')
+    }
   }
 
   // Format currency helpers
@@ -93,17 +95,29 @@ export default function AdminAnalyticsPage() {
     return revenueChartData.some(d => d.revenue > 0)
   }, [revenueChartData])
 
-  // Dynamic Growth Series
+  // Dynamic Growth Series — pair by date/month key rather than array index
   const growthChartData = useMemo(() => {
-    if (growth?.new_users && Array.isArray(growth.new_users) && growth.new_users.length > 0) {
-      return growth.new_users.map((u: any, idx: number) => {
-        const c = growth.new_challenges?.[idx]
-        return {
-          label: u.month || u.period || `P${idx + 1}`,
-          users: Number(u.count ?? 0),
-          challenges: Number(c?.count ?? 0),
-        }
-      })
+    const userList = Array.isArray(growth?.new_users) ? growth.new_users : []
+    const challengeList = Array.isArray(growth?.new_challenges) ? growth.new_challenges : []
+
+    if (userList.length > 0 || challengeList.length > 0) {
+      const dateMap = new Map<string, { label: string; users: number; challenges: number }>()
+
+      for (const u of userList) {
+        const key = String(u.month || (u as any).period || (u as any).date || '')
+        if (!key) continue
+        if (!dateMap.has(key)) dateMap.set(key, { label: key, users: 0, challenges: 0 })
+        dateMap.get(key)!.users = Number(u.count ?? 0)
+      }
+
+      for (const c of challengeList) {
+        const key = String(c.month || (c as any).period || (c as any).date || '')
+        if (!key) continue
+        if (!dateMap.has(key)) dateMap.set(key, { label: key, users: 0, challenges: 0 })
+        dateMap.get(key)!.challenges = Number(c.count ?? 0)
+      }
+
+      return Array.from(dateMap.values())
     }
     return ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr'].map(label => ({ label, users: 0, challenges: 0 }))
   }, [growth])
@@ -134,6 +148,22 @@ export default function AdminAnalyticsPage() {
   const totalUsersVal = Number(growth?.total_users ?? 0)
   const totalChallengesVal = Number(growth?.total_challenges ?? 0)
   const totalFundedVal = Number(growth?.total_funded ?? 0)
+
+  // Dynamic MoM Revenue Growth
+  const revenueTrend = useMemo(() => {
+    const monthly = Array.isArray(revenue?.monthly) ? revenue.monthly : []
+    if (monthly.length >= 2) {
+      const cur = Number(monthly[monthly.length - 1]?.total || (monthly[monthly.length - 1] as any)?.amount || 0)
+      const prev = Number(monthly[monthly.length - 2]?.total || (monthly[monthly.length - 2] as any)?.amount || 0)
+      if (prev > 0) {
+        const pct = ((cur - prev) / prev) * 100
+        return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% MoM`
+      } else if (cur > 0) {
+        return '+100% MoM'
+      }
+    }
+    return totalRevenueVal > 0 ? 'Live' : '0.0%'
+  }, [revenue, totalRevenueVal])
 
   // Challenge Lifecycle status counts
   const activeCount = Number(challenges?.status_counts?.find?.((s: any) => s.status === 'active')?.count ?? 0)
@@ -229,7 +259,7 @@ export default function AdminAnalyticsPage() {
                     Gross challenge fees & add-ons
                   </span>
                   <Badge tone="accent" size="sm" className="shrink-0 font-mono text-[10px] px-2 py-0.5">
-                    {totalRevenueVal > 0 ? '+14.8%' : '0.0%'}
+                    {revenueTrend}
                   </Badge>
                 </div>
               </CardContent>
@@ -458,7 +488,7 @@ export default function AdminAnalyticsPage() {
                         wrapperStyle={{ paddingBottom: '10px', fontSize: '11px' }}
                       />
                       <Bar dataKey="users" name="New Traders" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={32} />
-                      <Bar dataKey="challenges" name="Challenge Passes" fill="var(--accent-hex, #10B981)" radius={[6, 6, 0, 0]} maxBarSize={32} />
+                      <Bar dataKey="challenges" name="New Challenges" fill="var(--accent-hex, #10B981)" radius={[6, 6, 0, 0]} maxBarSize={32} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

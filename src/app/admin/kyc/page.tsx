@@ -384,9 +384,8 @@ export default function KycHubPage() {
         !searchQuery ||
         item.name?.toLowerCase().includes(search) ||
         item.email?.toLowerCase().includes(search) ||
-        item.country?.toLowerCase().includes(search) ||
-        item.doc_type?.toLowerCase().includes(search) ||
-        String(item.user_id).includes(search)
+        String(item.user_id).includes(search) ||
+        String(item.id).includes(search)
 
       return matchesStatus && matchesSearch
     })
@@ -496,7 +495,7 @@ export default function KycHubPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <input
             type="text"
-            placeholder="Search by trader name, email, country, or user ID..."
+            placeholder="Search by trader name, email, or user ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-xl bg-[#0B0F19] border border-[#1F2937] text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 font-medium"

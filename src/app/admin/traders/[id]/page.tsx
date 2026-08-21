@@ -212,7 +212,11 @@ export default function Trader360ProfilePage() {
 
     setIsSavingNote(true)
     try {
-      await api.admin.saveUserNote(userId, noteInput.trim())
+      const res = await api.admin.saveUserNote(userId, noteInput.trim())
+      if (!res.ok) {
+        toast.error(res.error || 'Failed to save note')
+        return
+      }
       const newEntry = {
         id: Date.now(),
         author: 'Current Administrator',

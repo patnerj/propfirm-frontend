@@ -151,7 +151,8 @@ export default function AdminHelpdeskPage() {
     const openCount = tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length
     const urgentCount = tickets.filter(t => t.priority === 'urgent').length
     const resolvedCount = tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length
-    return { total, openCount, urgentCount, resolvedCount }
+    const resolutionRate = total > 0 ? Math.round((resolvedCount / total) * 100) : 100
+    return { total, openCount, urgentCount, resolvedCount, resolutionRate }
   }, [tickets])
 
   return (
@@ -238,15 +239,15 @@ export default function AdminHelpdeskPage() {
         <Card className="bg-[#111827] border-[#1F2937]">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400">SLA Response Speed</span>
+              <span className="text-xs font-semibold text-gray-400">Resolution Rate</span>
               <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <CheckCircle className="h-3.5 w-3.5" />
               </div>
             </div>
             <div className="text-2xl font-bold text-emerald-400 mt-1.5 font-mono">
-              1.4h
+              {metrics.resolutionRate}%
             </div>
-            <span className="text-[10px] text-gray-500 font-mono">99.2% on-time resolution</span>
+            <span className="text-[10px] text-gray-500 font-mono">{metrics.resolvedCount} of {metrics.total} resolved</span>
           </CardContent>
         </Card>
       </div>
