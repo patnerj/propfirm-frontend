@@ -22,10 +22,12 @@ const defaultData = {
 
 async function getPageSchema() {
   try {
-    const res = await fetch("http://propfirm.local/wp-json/fxsim/v1/page-schema", { cache: 'no-store' });
+    const apiUrl = process.env.NEXT_PUBLIC_FXSIM_API || 'https://api.launchapropfirm.com/wp-json/fxsim/v1';
+    const res = await fetch(`${apiUrl}/page-schema`, { cache: 'no-store' });
     const data = await res.json();
-    if (data && data.schema) {
-      return data.schema;
+    if (data) {
+      if (data.schema) return data.schema;
+      if (data.content) return data;
     }
   } catch (err) {
     console.error("Error fetching page schema:", err);

@@ -582,6 +582,22 @@ export default function MarketingHubPage() {
   const [cookieDays, setCookieDays] = useState<number>(60)
   const [minPayout, setMinPayout] = useState<number>(100)
 
+  // Hydrate Affiliate Config from backend
+  const { data: affiliateConfig } = useQuery({
+    queryKey: ['admin-affiliate-config'],
+    queryFn: () => api.admin.affiliateConfigGet().then(res => res.ok ? res.data : null),
+    staleTime: 30000,
+  })
+
+  useEffect(() => {
+    if (affiliateConfig) {
+      if (affiliateConfig.tier_1_pct !== undefined) setTier1Rate(Number(affiliateConfig.tier_1_pct))
+      if (affiliateConfig.tier_2_pct !== undefined) setTier2Rate(Number(affiliateConfig.tier_2_pct))
+      if (affiliateConfig.cookie_days !== undefined) setCookieDays(Number(affiliateConfig.cookie_days))
+      if (affiliateConfig.min_payout !== undefined) setMinPayout(Number(affiliateConfig.min_payout))
+    }
+  }, [affiliateConfig])
+
   const saveAffiliateConfigMutation = useMutation({
     mutationFn: async (data: Record<string, any>) => {
       const res = await api.admin.affiliateConfigSave(data)

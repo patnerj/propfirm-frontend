@@ -120,6 +120,13 @@ export default function Trader360ProfilePage() {
     const profitSplit = Number(challenge?.custom_profit_split || challenge?.plan_profit_split || 80)
     const dailyDD = Number(challenge?.custom_daily_dd || 5.0)
     const maxDD = Number(challenge?.custom_max_dd || 10.0)
+    const minDays = Number(challenge?.custom_min_days || challenge?.min_trading_days || 5)
+    const newsTrading = challenge?.custom_news_trading !== undefined && challenge?.custom_news_trading !== null
+      ? Boolean(Number(challenge.custom_news_trading))
+      : Boolean(challenge?.news_trading ?? true)
+    const weekendHolding = challenge?.custom_weekend_holding !== undefined && challenge?.custom_weekend_holding !== null
+      ? Boolean(Number(challenge.custom_weekend_holding))
+      : Boolean(challenge?.weekend_holding ?? false)
 
     const tradesList = traderApiData?.trades || []
     const wins = tradesList.filter((t: any) => Number(t.pnl || t.profit || 0) > 0).length
@@ -152,6 +159,9 @@ export default function Trader360ProfilePage() {
       daily_dd_limit: dailyDD,
       max_dd: challenge?.max_drawdown_pct ? Number(challenge.max_drawdown_pct) : 0,
       max_dd_limit: maxDD,
+      min_days: minDays,
+      news_trading: newsTrading,
+      weekend_holding: weekendHolding,
       win_rate: winRate,
       wins: wins,
       losses: losses,
@@ -1170,9 +1180,9 @@ export default function Trader360ProfilePage() {
           profit_split: trader.profit_split,
           max_daily_loss: trader.daily_dd_limit,
           max_total_loss: trader.max_dd_limit,
-          min_days: 5,
-          news_trading: true,
-          weekend_holding: true,
+          min_days: trader.min_days,
+          news_trading: trader.news_trading,
+          weekend_holding: trader.weekend_holding,
         }}
         onSuccess={() => {
           refetch()

@@ -904,11 +904,19 @@ export default function AdminTournamentsPage() {
                                      p.rank === 3 ? 'text-amber-600 bg-amber-700/10 border-amber-700/30' :
                                      'text-gray-400 bg-gray-800/40 border-transparent'
 
+                    let prizes: any = {}
+                    const rawBreakdown = selectedTournamentForLeaderboard?.prizes_breakdown || (leaderboardData?.tournament as any)?.prizes_breakdown
+                    if (typeof rawBreakdown === 'string') {
+                      try { prizes = JSON.parse(rawBreakdown) } catch (e) {}
+                    } else if (rawBreakdown) {
+                      prizes = rawBreakdown
+                    }
+
                     let prizeLabel = '—'
-                    if (p.rank === 1) prizeLabel = '🥇 1st Place: $10,000 + $100K Account'
-                    else if (p.rank === 2) prizeLabel = '🥈 2nd Place: $5,000 + $50K Account'
-                    else if (p.rank === 3) prizeLabel = '🥉 3rd Place: $2,500 + $25K Account'
-                    else if (p.rank <= 10) prizeLabel = '🎖️ Top 10: $1,000'
+                    if (p.rank === 1) prizeLabel = prizes['1st'] ? `🥇 1st Place: ${prizes['1st']}` : '🥇 1st Place: 50% of Prize Pool'
+                    else if (p.rank === 2) prizeLabel = prizes['2nd'] ? `🥈 2nd Place: ${prizes['2nd']}` : '🥈 2nd Place: 30% of Prize Pool'
+                    else if (p.rank === 3) prizeLabel = prizes['3rd'] ? `🥉 3rd Place: ${prizes['3rd']}` : '🥉 3rd Place: 20% of Prize Pool'
+                    else if (p.rank <= 10 && prizes['top10']) prizeLabel = `🎖️ Top 10: ${prizes['top10']}`
 
                     return (
                       <tr key={p.id || index} className="hover:bg-[#1A2234] transition-colors">
@@ -1051,6 +1059,42 @@ export default function AdminTournamentsPage() {
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+            </div>
+          </div>
+
+          {/* Prize Breakdown */}
+          <div className="p-3 bg-[#0B0F19] rounded-xl border border-[#1F2937] space-y-3">
+            <span className="text-[11px] font-semibold text-gray-300 block font-mono">
+              🏆 Prize Distribution Breakdown
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px] text-amber-400">🥇 1st Place Prize</Label>
+                <Input
+                  placeholder="$10,000 + $100K Account"
+                  value={formData.first_prize}
+                  onChange={(e) => setFormData({ ...formData, first_prize: e.target.value })}
+                  className="text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-gray-300">🥈 2nd Place Prize</Label>
+                <Input
+                  placeholder="$5,000 + $50K Account"
+                  value={formData.second_prize}
+                  onChange={(e) => setFormData({ ...formData, second_prize: e.target.value })}
+                  className="text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] text-amber-600">🥉 3rd Place Prize</Label>
+                <Input
+                  placeholder="$2,500 + $25K Account"
+                  value={formData.third_prize}
+                  onChange={(e) => setFormData({ ...formData, third_prize: e.target.value })}
+                  className="text-xs font-mono"
+                />
+              </div>
             </div>
           </div>
 

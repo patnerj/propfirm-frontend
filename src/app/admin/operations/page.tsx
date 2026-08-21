@@ -184,6 +184,27 @@ export default function OperationsHubPage() {
 
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
 
+  // Hydrate initial state of emergency switches from backend
+  useEffect(() => {
+    Promise.all([
+      api.admin.maintenanceGet(),
+      api.admin.whitelabelGet()
+    ]).then(([maintRes, wlRes]) => {
+      const maintEnabled = Boolean(maintRes.ok && maintRes.data?.enabled)
+      const wlData = wlRes.ok ? (wlRes.data as any) : {}
+      const pauseTrading = wlData?.pause_trading === '1' || wlData?.pause_trading === 1 || wlData?.pause_trading === true
+      const pauseRegistrations = wlData?.pause_registrations === '1' || wlData?.pause_registrations === 1 || wlData?.pause_registrations === true
+
+      setEmergencyStates({
+        maintenanceMode: maintEnabled,
+        freezeTrading: pauseTrading,
+        pauseRegistrations: pauseRegistrations
+      })
+    }).catch(err => {
+      console.error('Failed to hydrate emergency switches', err)
+    })
+  }, [])
+
   // API Queries for Health
   const { data: healthReport, isLoading: isHealthLoading, refetch } = useQuery({
     queryKey: ['admin-health-deep'],

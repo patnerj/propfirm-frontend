@@ -25,10 +25,9 @@ export const TextBlock = ({ text, align, size }: { text: string, align: "left" |
     lg: "text-lg"
   };
   return (
-    <div 
-      className={`${sizeClasses[size]} text-${align} text-text-muted mb-6`} 
-      dangerouslySetInnerHTML={{ __html: text }} 
-    />
+    <div className={`${sizeClasses[size]} text-${align} text-text-muted mb-6 whitespace-pre-wrap`}>
+      {text}
+    </div>
   );
 };
 

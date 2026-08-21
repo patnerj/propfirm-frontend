@@ -86,10 +86,12 @@ export default function TradersHubPage() {
   const adminUser = useAuth((s) => s.user)
   const startImpersonation = useImpersonation((s) => s.start)
 
-  // Filter States
+  // Filter & Pagination States
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [kycFilter, setKycFilter] = useState<string>('all')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
 
   // Enterprise Override Modal State
   const [selectedTrader, setSelectedTrader] = useState<TraderOverrideTarget | null>(null)
@@ -132,8 +134,8 @@ export default function TradersHubPage() {
 
   // API Queries
   const { data: usersData, isLoading: usersLoading, refetch: refetchUsers } = useQuery({
-    queryKey: ['admin-users-list', searchTerm],
-    queryFn: () => api.admin.users(searchTerm).then(res => res.ok ? res.data : null),
+    queryKey: ['admin-users-list', searchTerm, page, pageSize],
+    queryFn: () => api.admin.users(searchTerm, page, pageSize).then(res => res.ok ? res.data : null),
     staleTime: 10000,
   })
 
@@ -193,12 +195,12 @@ export default function TradersHubPage() {
             starting_balance: startingBal,
             kyc_status: (c.kyc_status || u.kyc_status || 'unverified') as any,
             created_at: c.created_at || u.user_registered || new Date().toISOString(),
-            profit_split: Number(c.funded_profit_split || 80),
-            max_daily_loss: Number(c.max_daily_loss_pct || 5),
-            max_total_loss: Number(c.max_total_loss_pct || 10),
-            min_days: Number(c.min_trading_days || 5),
-            news_trading: Boolean(c.news_trading ?? true),
-            weekend_holding: Boolean(c.weekend_holding ?? false),
+            profit_split: Number(c.custom_profit_split || c.funded_profit_split || 80),
+            max_daily_loss: Number(c.custom_daily_dd || c.max_daily_loss_pct || 5),
+            max_total_loss: Number(c.custom_max_dd || c.max_total_loss_pct || 10),
+            min_days: Number(c.custom_min_days || c.min_trading_days || 5),
+            news_trading: c.custom_news_trading !== undefined && c.custom_news_trading !== null ? Boolean(Number(c.custom_news_trading)) : Boolean(c.news_trading ?? true),
+            weekend_holding: c.custom_weekend_holding !== undefined && c.custom_weekend_holding !== null ? Boolean(Number(c.custom_weekend_holding)) : Boolean(c.weekend_holding ?? false),
           })
         }
       } else {
@@ -714,6 +716,52 @@ export default function TradersHubPage() {
             className="border-0 rounded-none bg-transparent"
           />
         </CardContent>
+
+        {/* Pagination Bar */}
+        {usersData && (usersData.pages > 1 || (usersData.total && usersData.total > 25)) && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-[#1F2937] bg-[#0B0F19]/50">
+            <div className="flex items-center gap-2 text-xs text-gray-400 font-mono">
+              <span>Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setPage(1)
+                }}
+                className="bg-[#111827] border border-[#1F2937] rounded px-2 py-1 text-xs text-gray-200 focus:outline-none"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="ml-2">
+                Page <strong className="text-white">{page}</strong> of <strong className="text-white">{usersData.pages || 1}</strong> ({usersData.total} total traders)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                className="text-xs h-8 px-3 border-[#1F2937] text-gray-300 disabled:opacity-40"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= (usersData.pages || 1)}
+                onClick={() => setPage(p => p + 1)}
+                className="text-xs h-8 px-3 border-[#1F2937] text-gray-300 disabled:opacity-40"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* ── Enterprise Overrides Modal ────────────────────────────────────── */}

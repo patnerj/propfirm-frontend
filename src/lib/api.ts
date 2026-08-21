@@ -138,6 +138,12 @@ export const api = {
     leaderboard: (id: number) => fxsim<import('../types/api').LeaderboardRow[]>(`/competitions/${id}/leaderboard`, { public: true, cache: 5_000 }),
     register: (id: number) => fxsim<{ success: boolean; message?: string; account_id?: number; checkout_required?: boolean; checkout_url?: string }>(`/competitions/${id}/join`, { method: 'POST' }),
   },
+  tournaments: {
+    list:     (params?: { status?: string; search?: string }) => fxsim<import('../types/api').Competition[]>('/tournaments', { query: params, public: true, cache: 0 }),
+    get:      (id: number) => fxsim<import('../types/api').Competition>(`/tournaments/${id}`, { public: true, cache: 0 }),
+    join:     (id: number) => fxsim<{ success: boolean; message: string; participant_id?: number; tournament_id?: number }>(`/tournaments/${id}/join`, { method: 'POST' }),
+    leaderboard: (id: number) => fxsim<{ tournament: import('../types/api').Competition; leaderboard: import('../types/api').LeaderboardRow[] }>(`/tournaments/${id}/leaderboard`, { public: true, cache: 0 }),
+  },
   profile: (id: number) => fxsim<{ id: number; name: string; badges: any[]; total_payouts: number }>(`/profile/${id}`, { public: true, cache: 30_000 }),
   // ── Payments ──────────────────────────────────────────────────────────
   paymentConfig:    ()           => fxsim<PaymentConfig>('/payment/config', { cache: 60_000 }),
@@ -347,6 +353,7 @@ export const api = {
     affiliatesList: () => fxsim<AdminAffiliate[]>('/admin/affiliates', { cache: 5_000 }),
     affiliateRate:  (id: number, rate: number) => fxsim<{ success: boolean }>(`/admin/affiliates/${id}/rate`, { body: { rate_percent: rate } }),
     affiliateStatus:(id: number, status: 'active' | 'suspended') => fxsim<{ success: boolean }>(`/admin/affiliates/${id}/status`, { body: { status } }),
+    affiliateConfigGet: () => fxsim<{ tier_1_pct: number; tier_2_pct: number; cookie_days: number; min_payout: number }>('/admin/affiliates/config', { cache: 0 }),
     affiliateConfigSave: (data: Record<string, any>) => fxsim<{ success: boolean; message?: string }>('/admin/affiliates/config', { body: data }),
     affiliatePayoutCreate: (data: { affiliate_id: number; amount: number; method?: string; destination?: string; note?: string; tx_reference?: string }) =>
       fxsim<{ success: boolean; message?: string }>('/admin/affiliates/payout', { body: data }),
@@ -360,6 +367,7 @@ export const api = {
       fxsim<{ success: boolean; status?: string; message?: string }>(`/admin/test-tools/challenge/${id}/set`, { body: { action } }),
     notificationsRead: (ids?: number[]) =>
       fxsim<{ success: true }>('/admin/notifications/read', { body: { ids: ids ?? [] } }),
+    maintenanceGet: () => fxsim<{ enabled: boolean; message: string }>('/admin/maintenance', { public: true, cache: 0 }),
     maintenance:  (enabled: boolean, message: string) =>
       fxsim<{ success: true }>('/admin/maintenance', { body: { enabled, message } }),
 
