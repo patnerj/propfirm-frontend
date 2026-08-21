@@ -128,10 +128,19 @@ function EmergencyControls() {
   const [confirmSwitch, setConfirmSwitch] = useState<{ key: string; next: boolean; label: string } | null>(null)
 
   const load = useCallback(async () => {
-    const r = await api.admin.whitelabelGet()
+    const [r, newsRes] = await Promise.all([
+      api.admin.whitelabelGet(),
+      api.admin.newsLockGet()
+    ])
     if (r.ok) {
       const s: Record<string, boolean> = {}
-      for (const sw of SWITCHES) s[sw.key] = r.data[sw.key] === '1'
+      for (const sw of SWITCHES) {
+        if (sw.key === 'pause_trading') {
+          s[sw.key] = r.data[sw.key] === '1' || Boolean(newsRes.ok && newsRes.data?.locked)
+        } else {
+          s[sw.key] = r.data[sw.key] === '1'
+        }
+      }
       setState(s)
     }
   }, [])
@@ -140,7 +149,11 @@ function EmergencyControls() {
   const executeToggle = async (key: string, next: boolean) => {
     setBusy(key)
     setConfirmSwitch(null)
-    const r = await api.admin.whitelabelSave({ [key]: next ? '1' : '0' })
+    const promises: Promise<any>[] = [api.admin.whitelabelSave({ [key]: next ? '1' : '0' })]
+    if (key === 'pause_trading') {
+      promises.push(api.admin.newsLock(next))
+    }
+    const [r] = await Promise.all(promises)
     setBusy(null)
     if (r.ok && r.data.success) {
       setState((s) => ({ ...(s || {}), [key]: next }))

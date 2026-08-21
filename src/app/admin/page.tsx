@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   DollarSign, Users, Target, Award, LineChart, Activity, Wallet, CreditCard,
@@ -88,6 +88,21 @@ export default function AdminCommandCenter() {
 
   // Chart time range filter
   const [chartRange, setChartRange] = useState<'7m' | '1y' | 'all'>('7m')
+
+  // Hydrate firm-wide emergency freeze state from backend
+  useEffect(() => {
+    Promise.all([
+      api.admin.whitelabelGet(),
+      api.admin.newsLockGet()
+    ]).then(([wlRes, newsRes]) => {
+      const wlData = wlRes.ok ? (wlRes.data as any) : {}
+      const pauseTrading = wlData?.pause_trading === '1' || wlData?.pause_trading === 1 || wlData?.pause_trading === true
+      const newsLocked = Boolean(newsRes.ok && newsRes.data?.locked)
+      setIsEmergencyPaused(pauseTrading || newsLocked)
+    }).catch(err => {
+      console.error('Failed to hydrate emergency freeze state', err)
+    })
+  }, [])
 
   // API Queries with parallel fetching
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
@@ -517,10 +532,13 @@ export default function AdminCommandCenter() {
     setIsEmergencyPaused(nextState)
     setEmergencyModalOpen(false)
     try {
-      const res = await api.admin.whitelabelSave({ pause_trading: nextState ? '1' : '0' })
-      if (!res.ok) {
+      const [wlRes] = await Promise.all([
+        api.admin.whitelabelSave({ pause_trading: nextState ? '1' : '0' }),
+        api.admin.newsLock(nextState)
+      ])
+      if (!wlRes.ok) {
         setIsEmergencyPaused(!nextState)
-        toast.error(res.error || 'Failed to update emergency state')
+        toast.error(wlRes.error || 'Failed to update emergency state')
         return
       }
       if (nextState) {
