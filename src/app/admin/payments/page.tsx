@@ -355,6 +355,12 @@ export default function PaymentsHubPage() {
                 <p className="text-[11px] text-gray-500 font-mono">
                   Webhook URL to register in Stripe Dashboard: <code className="text-emerald-400">/wp-json/fxsim/v1/stripe/webhook</code>
                 </p>
+                {gatewayForm.stripe_enabled && !gatewayForm.stripe_webhook_secret && (
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>Stripe webhook secret not configured — Stripe checkouts will not auto-activate accounts.</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex items-center justify-between">
