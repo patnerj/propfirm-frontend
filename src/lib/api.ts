@@ -233,7 +233,7 @@ export const api = {
     risk:         () => fxsim<AdminRisk>('/admin/risk', { cache: 10_000 }),
     riskAlerts: () => fxsim<AdminRiskAlerts>('/admin/risk/alerts', { cache: 5_000 }),
     riskExposure: () => fxsim<import('../types/api').RiskExposureItem[]>('/admin/risk/exposure', { cache: 5_000 }),
-    riskForceClose: (userIdOrAccount: { user_id?: number; account_id?: number }) =>
+    riskForceClose: (userIdOrAccount: { user_id?: number; account_id?: number | string }) =>
       fxsim<{ success: boolean; message: string; closed_count?: number }>('/admin/risk/force-close', { body: userIdOrAccount }),
     riskFlagTrader: (data: { user_id: number; reason?: string }) =>
       fxsim<{ success: boolean; message: string }>('/admin/risk/flag', { body: data }),

@@ -118,7 +118,9 @@ export function PayoutManagementModal({
   const isConsistencyOk = payout.consistency_ok !== false && !payout.consistency_breached
   const isHoldTimeClean = !payout.hft_flagged && !payout.anti_scalp_breached
   const isDrawdownSafe = !payout.near_drawdown_floor && !payout.dd_proximity_warning
-  const isAllClean = isConsistencyOk && isHoldTimeClean && isDrawdownSafe
+  const breachesCount = Number(payout.breaches_count || 0)
+  const isBreachesClean = breachesCount === 0
+  const isAllClean = isConsistencyOk && isHoldTimeClean && isDrawdownSafe && isBreachesClean
 
   const handleCopy = () => {
     if (destinationAddress) {
@@ -329,7 +331,7 @@ export function PayoutManagementModal({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {/* Consistency Status */}
             <div className="bg-[#111827] border border-[#1F2937] p-2.5 rounded-lg flex items-center justify-between">
               <div className="space-y-0.5">
@@ -360,6 +362,17 @@ export function PayoutManagementModal({
               </div>
               <Badge tone={isDrawdownSafe ? 'success' : 'warning'} size="sm" className="font-mono text-[10px]">
                 {isDrawdownSafe ? 'Safe' : 'Near Floor'}
+              </Badge>
+            </div>
+
+            {/* Open Breaches */}
+            <div className="bg-[#111827] border border-[#1F2937] p-2.5 rounded-lg flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-gray-400 font-semibold block">Rule Violations</span>
+                <span className="text-[11px] font-mono text-gray-200">Breach History</span>
+              </div>
+              <Badge tone={isBreachesClean ? 'success' : 'danger'} size="sm" className="font-mono text-[10px]">
+                {isBreachesClean ? '0 Breaches' : `${breachesCount} Breached`}
               </Badge>
             </div>
           </div>
