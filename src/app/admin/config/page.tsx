@@ -2325,7 +2325,7 @@ export default function ConfigurationHubPage() {
                         <input
                           ref={faviconFileInputRef}
                           type="file"
-                          accept=".ico,.png,.svg,.webp"
+                          accept=".ico,.png,.webp,.jpg,.jpeg"
                           className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0]

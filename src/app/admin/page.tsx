@@ -717,7 +717,7 @@ export default function AdminCommandCenter() {
                   Challenge purchases & add-ons
                 </span>
                 <Badge tone="accent" size="sm" className="shrink-0 font-mono text-[10px] px-2 py-0.5">
-                  {totalRev > 0 ? '+14.8%' : '0.0%'}
+                  {revenueTrend}
                 </Badge>
               </div>
             </CardContent>

@@ -25,19 +25,31 @@ export default function AdminAnalyticsPage() {
 
   const { data: revenue, isPending: isRevPending, refetch: refetchRevenue } = useQuery({
     queryKey: ['admin-analytics-revenue', period],
-    queryFn: () => api.admin.analyticsRevenue(period).then(res => res.ok ? res.data : null),
+    queryFn: async () => {
+      const res = await api.admin.analyticsRevenue(period)
+      if (!res.ok) throw new Error(res.error || 'Failed to load revenue analytics')
+      return res.data
+    },
     staleTime: 15000,
   })
 
   const { data: growth, isPending: isGrowthPending, refetch: refetchGrowth } = useQuery({
     queryKey: ['admin-analytics-growth', period],
-    queryFn: () => api.admin.analyticsGrowth(period).then(res => res.ok ? res.data : null),
+    queryFn: async () => {
+      const res = await api.admin.analyticsGrowth(period)
+      if (!res.ok) throw new Error(res.error || 'Failed to load growth analytics')
+      return res.data
+    },
     staleTime: 15000,
   })
 
   const { data: challenges, isPending: isChallengesPending, refetch: refetchChallenges } = useQuery({
     queryKey: ['admin-analytics-challenges'],
-    queryFn: () => api.admin.analyticsChallenges().then(res => res.ok ? res.data : null),
+    queryFn: async () => {
+      const res = await api.admin.analyticsChallenges()
+      if (!res.ok) throw new Error(res.error || 'Failed to load challenge analytics')
+      return res.data
+    },
     staleTime: 15000,
   })
 
@@ -45,7 +57,16 @@ export default function AdminAnalyticsPage() {
 
   const handleRefreshAll = async () => {
     try {
-      await Promise.all([refetchRevenue(), refetchGrowth(), refetchChallenges()])
+      const [rRev, rGrowth, rChal] = await Promise.all([
+        refetchRevenue(),
+        refetchGrowth(),
+        refetchChallenges()
+      ])
+      if (rRev.isError || rGrowth.isError || rChal.isError || !rRev.data || !rGrowth.data || !rChal.data) {
+        const errMsg = rRev.error?.message || rGrowth.error?.message || rChal.error?.message || 'One or more analytics queries failed to refresh.'
+        toast.error(errMsg)
+        return
+      }
       toast.success('Analytics intelligence metrics refreshed')
     } catch (err: any) {
       toast.error(err?.message || 'Failed to refresh analytics data')
