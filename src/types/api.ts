@@ -661,22 +661,26 @@ export interface AuthUser {
 
 // ── Trade ticket payloads ────────────────────────────────────────────────────
 export interface OpenOrderBody {
-  symbol:   string
-  type:     'buy' | 'sell'
-  lot_size: number
-  sl?:      number | null
-  tp?:      number | null
+  symbol:         string
+  type:           'buy' | 'sell'
+  lot_size:       number
+  sl?:            number | null
+  tp?:            number | null
+  account_id?:    number
+  tournament_id?: number
 }
 
 export interface PendingOrderBody {
-  symbol:       string
-  order_type:   PendingOrder['order_type']
-  type:         'buy' | 'sell'
-  lot_size:     number
-  target_price: number
-  sl?:          number | null
-  tp?:          number | null
-  expires_at?:  string | null
+  symbol:         string
+  order_type:     PendingOrder['order_type']
+  type:           'buy' | 'sell'
+  lot_size:       number
+  target_price:   number
+  sl?:            number | null
+  tp?:            number | null
+  expires_at?:    string | null
+  account_id?:    number
+  tournament_id?: number
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────────

@@ -79,15 +79,15 @@ export const api = {
   leaderboard:   ()              => fxsim<LeaderboardRow[]>('/stats/leaderboard', { public: true, cache: 30_000 }),
 
   // ── Account / Trading ─────────────────────────────────────────────────
-  account:       ()              => fxsim<Account | NoChallengeResp>('/account',      { cache: 4_000 }),
-  positions:     ()              => fxsim<Position[]>('/positions',                   { cache: 2_000 }),
+  account:       (params?: { account_id?: number; tournament_id?: number }) => fxsim<Account | NoChallengeResp>('/account', { query: params, cache: 4_000 }),
+  positions:     (params?: { account_id?: number; tournament_id?: number }) => fxsim<Position[]>('/positions', { query: params, cache: 2_000 }),
   newsEvents:    ()              => fxsim<any[]>('/news-events',                      { cache: 60_000 }),
   open:          (b: OpenOrderBody) => fxsim<{ success: boolean; message?: string; position_id?: number }>('/open', { body: b, retries: 0 }),
   close:         (id: number)    => fxsim<{ success: boolean; message?: string; pnl?: number }>(`/close/${id}`, { method: 'POST', retries: 0 }),
   partialClose:  (id: number, lots: number) => fxsim<{ success: boolean; message?: string }>(`/partial-close/${id}`, { body: { lots }, retries: 0 }),
   sltp:          (id: number, sl: number | null, tp: number | null) =>
     fxsim<{ success: boolean; message?: string }>(`/sltp/${id}`, { body: { sl, tp } }),
-  history:       (lastId?: number) => fxsim<HistoryResp>('/history',                  { query: { last_id: lastId }, cache: 6_000 }),
+  history:       (lastId?: number, params?: { account_id?: number; tournament_id?: number }) => fxsim<HistoryResp>('/history', { query: { last_id: lastId, ...(params || {}) }, cache: 6_000 }),
   tradeNotesGet: (id: number) => fxsim<{ note?: string; tags?: string; screenshot_url?: string }>(`/trades/${id}/notes`, { cache: 0 }),
   tradeNotesSave:(id: number, data: { note: string; tags: string[]; screenshot_url: string }) => fxsim<{ success: boolean }>(`/trades/${id}/notes`, { method: 'POST', body: data }),
   transactions:  ()              => fxsim<Transaction[]>('/transactions',             { cache: 8_000 }),
@@ -98,7 +98,7 @@ export const api = {
   // ── Pending orders ────────────────────────────────────────────────────
   pendingPlace:  (b: PendingOrderBody) => fxsim<{ success: boolean; message?: string }>('/pending-order/place', { body: b, retries: 0 }),
   pendingCancel: (id: number)    => fxsim<{ success: boolean; message?: string }>(`/pending-order/${id}/cancel`, { method: 'POST', retries: 0 }),
-  pendingMine:   ()              => fxsim<PendingOrder[]>('/pending-order/my', { cache: 4_000 }),
+  pendingMine:   (params?: { account_id?: number; tournament_id?: number }) => fxsim<PendingOrder[]>('/pending-order/my', { query: params, cache: 4_000 }),
 
   // ── Challenge ─────────────────────────────────────────────────────────
   challengeMy:      ()           => fxsim<ChallengeAccount[]>('/challenge/my', { cache: 8_000 }),
