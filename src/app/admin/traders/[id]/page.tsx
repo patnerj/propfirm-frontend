@@ -248,18 +248,49 @@ export default function Trader360ProfilePage() {
     }
   }
 
+  useEffect(() => {
+    if (traderApiData) {
+      const accStatus = traderApiData.account?.status || traderApiData.account_status
+      const userStatus = traderApiData.user?.status
+      if (accStatus === 'banned' || accStatus === 'frozen' || userStatus === 'banned' || userStatus === 'suspended') {
+        setIsBanned(true)
+      } else {
+        setIsBanned(false)
+      }
+
+      if (traderApiData.notes && Array.isArray(traderApiData.notes)) {
+        setAdminNotesList(traderApiData.notes)
+      } else if (traderApiData.note) {
+        setAdminNotesList([{
+          id: 1,
+          author: 'System Admin',
+          role: 'Compliance',
+          content: traderApiData.note,
+          date: 'Audit Record',
+        }])
+      }
+    }
+  }, [traderApiData])
+
   const handleToggleFreeze = async () => {
     const nextState = !isBanned
     setIsBanned(nextState)
     try {
-      await api.admin.setStatus(userId, nextState ? 'suspended' : 'active')
+      const res = await api.admin.setStatus(userId, nextState ? 'banned' : 'active')
+      if (!res.ok || !res.data?.success) {
+        setIsBanned(!nextState)
+        toast.error((!res.ok ? res.error : res.data?.message) || 'Failed to update account status')
+        return
+      }
       if (nextState) {
         toast.error(`Account frozen: ${trader.name} suspended & MT5 access disabled.`)
       } else {
         toast.success(`Account unlocked: ${trader.name} restored to active live trading.`)
       }
       queryClient.invalidateQueries({ queryKey: ['admin-traders-list'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-trader-360', userId] })
     } catch (err: any) {
+      setIsBanned(!nextState)
       toast.error(err.message || 'Failed to update account status')
     }
   }

@@ -488,19 +488,23 @@ export default function AdminCommandCenter() {
     }
     setIssuingLoading(true)
     try {
-      // Trigger challenge creation
-      await new Promise(r => setTimeout(r, 600))
-      toast.success(`Challenge granted successfully! Account ACC-${Math.floor(Math.random() * 8000 + 1000)} issued to ${issueForm.email}`)
-      setIssueModalOpen(false)
-      setIssueForm({
-        email: '',
-        planType: '100k-stellar',
-        phase: '1',
-        balance: '100000',
-        leverage: '1:100'
-      })
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
-      queryClient.invalidateQueries({ queryKey: ['admin-challenges'] })
+      const res = await api.admin.createManualChallenge({ email: issueForm.email })
+      if (res.ok && res.data.success) {
+        toast.success(res.data.message || `Challenge account #${res.data.account_id} issued to ${issueForm.email}`)
+        setIssueModalOpen(false)
+        setIssueForm({
+          email: '',
+          planType: '100k-stellar',
+          phase: '1',
+          balance: '100000',
+          leverage: '1:100'
+        })
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+        queryClient.invalidateQueries({ queryKey: ['admin-challenges'] })
+        queryClient.invalidateQueries({ queryKey: ['admin-traders-list'] })
+      } else {
+        toast.error((!res.ok ? res.error : (res.data as any)?.message) || 'Failed to issue manual challenge')
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Failed to issue manual challenge')
     } finally {
@@ -512,14 +516,25 @@ export default function AdminCommandCenter() {
     const nextState = !isEmergencyPaused
     setIsEmergencyPaused(nextState)
     setEmergencyModalOpen(false)
-    if (nextState) {
-      toast.error('EMERGENCY PAUSE ACTIVATED: All live orders & trading execution halted firm-wide.', {
-        duration: 5000,
-      })
-    } else {
-      toast.success('TRADING RESUMED: Global execution locks released.', {
-        duration: 4000,
-      })
+    try {
+      const res = await api.admin.whitelabelSave({ pause_trading: nextState ? '1' : '0' })
+      if (!res.ok) {
+        setIsEmergencyPaused(!nextState)
+        toast.error(res.error || 'Failed to update emergency state')
+        return
+      }
+      if (nextState) {
+        toast.error('EMERGENCY PAUSE ACTIVATED: All live orders & trading execution halted firm-wide.', {
+          duration: 5000,
+        })
+      } else {
+        toast.success('TRADING RESUMED: Global execution locks released.', {
+          duration: 4000,
+        })
+      }
+    } catch (err: any) {
+      setIsEmergencyPaused(!nextState)
+      toast.error(err.message || 'Failed to update emergency state')
     }
   }
 

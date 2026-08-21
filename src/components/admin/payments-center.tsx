@@ -202,10 +202,10 @@ function ConfirmoCard() {
   const [hasConfig, setHasConfig] = useState(false)
 
   useEffect(() => {
-    api.admin.whitelabelGet().then((r) => {
+    api.admin.whitelabelGet().then((r: any) => {
       if (r.ok) {
         setApiKey(r.data.confirmo_api_key || '')
-        setHasConfig(!!r.data.confirmo_api_key || !!r.data.confirmo_callback_secret)
+        setHasConfig(Boolean(r.data.confirmo_api_key_set || r.data.confirmo_callback_secret_set || r.data.confirmo_api_key || r.data.confirmo_callback_secret))
       }
     })
   }, [])

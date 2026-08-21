@@ -173,6 +173,10 @@ export default function TradersHubPage() {
           const phaseNum = Number(c.phase || 1)
           const isFunded = c.status === 'funded' || phaseNum === 3
 
+          const isAccountBanned = u.status === 'banned' || u.status === 'suspended' || c.status === 'banned' || (c as any).account_status === 'banned'
+          const isAccountFrozen = u.status === 'frozen' || c.status === 'frozen' || (c as any).account_status === 'frozen'
+          const rowStatus = isAccountBanned ? 'banned' : (isAccountFrozen ? 'frozen' : (c.status || (isFunded ? 'funded' : 'active')))
+
           rows.push({
             id: Number(c.id),
             user_id: uid,
@@ -183,7 +187,7 @@ export default function TradersHubPage() {
             plan_name: c.plan_name || '$100K Stellar 2-Step',
             phase: phaseNum,
             phase_name: isFunded ? 'Funded Pro' : `Phase ${phaseNum}`,
-            status: c.status || (isFunded ? 'funded' : 'active'),
+            status: rowStatus,
             balance: currentBal,
             equity: currentEq,
             starting_balance: startingBal,

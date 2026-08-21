@@ -233,6 +233,10 @@ export const api = {
     risk:         () => fxsim<AdminRisk>('/admin/risk', { cache: 10_000 }),
     riskAlerts: () => fxsim<AdminRiskAlerts>('/admin/risk/alerts', { cache: 5_000 }),
     riskExposure: () => fxsim<import('../types/api').RiskExposureItem[]>('/admin/risk/exposure', { cache: 5_000 }),
+    riskForceClose: (userIdOrAccount: { user_id?: number; account_id?: number }) =>
+      fxsim<{ success: boolean; message: string; closed_count?: number }>('/admin/risk/force-close', { body: userIdOrAccount }),
+    riskFlagTrader: (data: { user_id: number; reason?: string }) =>
+      fxsim<{ success: boolean; message: string }>('/admin/risk/flag', { body: data }),
     bulkPayouts:  (ids: number[], status: string, note?: string) =>
       fxsim<{ success: boolean; processed: number; failed: number }>('/admin/bulk/payouts', { body: { ids, status, note } }),
     payoutsExecuteBulk: () =>
@@ -241,6 +245,8 @@ export const api = {
       fxsim<{ success: boolean; processed: number; failed: number }>('/admin/bulk/kyc', { body: { ids, action, note } }),
     saveUserNote: (userId: number, note: string) =>
       fxsim<{ success: boolean }>(`/admin/user/${userId}/note`, { body: { note } }),
+    createManualChallenge: (data: { email?: string; user_id?: number; plan_id?: number }) =>
+      fxsim<{ success: boolean; challenge_id: number; account_id: number; message: string }>('/admin/challenges/create-manual', { body: data }),
 
     plansList:    ()                 => fxsim<ChallengePlan[]>('/admin/plans',                           { cache: 0 }),
     planSave:     (data: Partial<ChallengePlan> & Record<string, any>) =>
@@ -361,7 +367,7 @@ export const api = {
     smtpSave: (data: Partial<SmtpConfig> & { pass?: string; auth?: boolean }) =>
       fxsim<{ success: boolean }>('/admin/smtp/save', { body: data as Record<string, unknown> }),
     smtpTest: (to?: string) => fxsim<{ success: boolean; message?: string }>('/admin/smtp/test', { body: { to } }),
-    priceFeedSave: (data: Record<string, string>) => fxsim<{ success: true }>('/admin/price-feed/save', { body: data }),
+    priceFeedSave: (data: Record<string, any>) => fxsim<{ success: true }>('/admin/price-feed/save', { body: data }),
     priceFeedHealth: () => fxsim<{
       mode: 'auto' | 'mt5' | 'yahoo'; active_source: string; status: string;
       mt5_last_push_ts: number | null; mt5_age_sec: number | null; mt5_fresh: boolean;

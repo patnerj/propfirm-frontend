@@ -240,7 +240,10 @@ export default function OperationsHubPage() {
       if (key === 'maintenanceMode') {
         await api.admin.maintenance(nextState, 'Platform maintenance in progress.')
       } else if (key === 'freezeTrading') {
+        await api.admin.whitelabelSave({ pause_trading: nextState ? '1' : '0' })
         await api.admin.newsLock(nextState)
+      } else if (key === 'pauseRegistrations') {
+        await api.admin.whitelabelSave({ pause_registrations: nextState ? '1' : '0' })
       }
 
       setEmergencyStates(prev => ({ ...prev, [key]: nextState }))
@@ -283,10 +286,12 @@ export default function OperationsHubPage() {
   const saveFeedMutation = useMutation({
     mutationFn: async (payload: typeof priceFeedForm) => {
       const res = await api.admin.priceFeedSave({
+        source_mode: payload.price_source_mode,
+        mt5_stale_secs: Number(payload.stale_threshold_sec),
         price_source_mode: payload.price_source_mode,
-        stale_threshold_sec: String(payload.stale_threshold_sec),
-        auto_failover: String(payload.auto_failover_enabled),
-        auto_freeze: String(payload.auto_freeze_on_latency),
+        stale_threshold_sec: Number(payload.stale_threshold_sec),
+        auto_failover: Boolean(payload.auto_failover_enabled),
+        auto_freeze: Boolean(payload.auto_freeze_on_latency),
       })
       if (!res.ok) throw new Error('Failed to save price feed settings')
       return res.data

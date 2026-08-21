@@ -781,6 +781,9 @@ export interface AdminRiskAlerts {
   hft_risks:      RiskAlertUser[]
   gambling_risks: RiskAlertUser[]
   open_flags:     number
+  breaches?:      any[]
+  toxic_trades?:  any[]
+  alerts?:        any[]
 }
 
 export interface RiskExposureItem {

@@ -120,13 +120,13 @@ export default function RiskManagementHubPage() {
   })
 
   // API Queries
-  const { data: riskStats, isLoading: isRiskLoading, refetch } = useQuery({
+  const { data: riskStats, isLoading: isRiskLoading, refetch: refetchStats } = useQuery({
     queryKey: ['admin-risk-overview'],
     queryFn: () => api.admin.risk().then(res => res.ok ? res.data : null),
     staleTime: 10000,
   })
 
-  const { data: alertsData } = useQuery({
+  const { data: alertsData, refetch: refetchAlerts } = useQuery({
     queryKey: ['admin-risk-alerts-data'],
     queryFn: () => api.admin.riskAlerts().then(res => res.ok ? res.data : null),
     staleTime: 10000,
@@ -184,13 +184,14 @@ export default function RiskManagementHubPage() {
 
   // Algorithmic Rule Violations Dataset (Dynamic from API)
   const violationAlerts: ViolationAlertRow[] = useMemo(() => {
-    if (alertsData && Array.isArray(alertsData) && alertsData.length > 0) {
-      return alertsData.map((a: any, idx: number) => ({
+    const rawList = alertsData?.alerts || (Array.isArray(alertsData) ? alertsData : (alertsData?.breaches || []))
+    if (rawList && rawList.length > 0) {
+      return rawList.map((a: any, idx: number) => ({
         id: a.id || idx + 1,
-        trader_name: a.trader_name || a.username || `Trader #${a.user_id || idx + 1}`,
-        email: a.email || `${a.username || 'trader'}@example.com`,
+        trader_name: a.trader_name || a.username || a.display_name || `Trader #${a.user_id || idx + 1}`,
+        email: a.email || a.user_email || `${a.username || 'trader'}@example.com`,
         user_id: a.user_id || 101,
-        account_id: a.account_id || a.login || `#TRD-${a.user_id || idx + 1}`,
+        account_id: a.account_id || (a.challenge_id ? `#CH-${a.challenge_id}` : `#TRD-${a.user_id || idx + 1}`),
         rule_type: a.rule_type || a.violation_type || 'Risk Limit Exceeded',
         risk_level: a.risk_level || 'high',
         details: a.details || a.description || 'Drawdown or leverage limit breach detected.',
@@ -203,13 +204,32 @@ export default function RiskManagementHubPage() {
 
   // Handlers for quick risk actions
   const handleForceClose = async (row: ViolationAlertRow) => {
-    toast.error(`Forced liquidation signal dispatched: All open trades for ${row.account_id} closed at market price.`, {
-      duration: 5000,
-    })
+    try {
+      const res = await api.admin.riskForceClose({ user_id: row.user_id })
+      if (res.ok && res.data.success) {
+        toast.success(res.data.message || `All open trades for ${row.account_id} closed at market price.`)
+        refetchAlerts()
+        refetchStats()
+      } else {
+        toast.error((!res.ok ? res.error : res.data.message) || 'Failed to force close trades')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to force close trades')
+    }
   }
 
-  const handleFlagTrader = (row: ViolationAlertRow) => {
-    toast.warning(`Account ${row.account_id} tagged with Compliance Risk Flag. Trader notified of audit.`)
+  const handleFlagTrader = async (row: ViolationAlertRow) => {
+    try {
+      const res = await api.admin.riskFlagTrader({ user_id: row.user_id, reason: row.details })
+      if (res.ok && res.data.success) {
+        toast.warning(`Account ${row.account_id} tagged with Compliance Risk Flag. Trader notified of audit.`)
+        refetchAlerts()
+      } else {
+        toast.error((!res.ok ? res.error : res.data.message) || 'Failed to flag trader')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to flag trader')
+    }
   }
 
   // DataTable Column Definitions
@@ -385,7 +405,8 @@ export default function RiskManagementHubPage() {
             size="sm" 
             onClick={() => {
               if (activeTab === 'overview') {
-                refetch()
+                refetchStats()
+                refetchAlerts()
                 toast.success('Risk telemetry refreshed')
               } else {
                 refetchSyndicates()
