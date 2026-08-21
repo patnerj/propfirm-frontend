@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
       target_username:    target.user_login,
       started_at:         Date.now(),
     })
-    setSession({ nonce: null })   // admin's nonce is no longer valid for target user
+    setSession({ nonce: null, bearer: null })   // admin's nonce and bearer are cleared for target user
     clearFxsimCache()              // wipe any admin-scoped responses
     setImpersonateFor(null)
     toast.success(`Viewing as ${target.user_login}`)

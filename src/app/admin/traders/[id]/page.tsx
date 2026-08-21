@@ -282,7 +282,7 @@ export default function Trader360ProfilePage() {
         target_username: trader.name || trader.email,
         started_at: Date.now(),
       })
-      setSession({ nonce: null })
+      setSession({ nonce: null, bearer: null })
       clearFxsimCache()
       toast.success(`Switching to view dashboard as ${trader.name}...`)
       window.location.href = '/dashboard'

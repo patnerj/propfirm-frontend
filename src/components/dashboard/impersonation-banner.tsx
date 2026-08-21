@@ -22,7 +22,7 @@ export function ImpersonationBanner() {
     if (res.ok && res.data.success) {
       // Admin auth cookie has been restored server-side. Adopt the fresh nonce
       // and re-load the session as the admin — no logout.
-      if (res.data.nonce) setSession({ nonce: res.data.nonce })
+      if (res.data.nonce) setSession({ nonce: res.data.nonce, bearer: null })
       endImp()
       // Drop every cached GET fetched as the impersonated trader (account,
       // positions, dashboard, etc.) so the restored admin session shows its
