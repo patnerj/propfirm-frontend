@@ -206,12 +206,13 @@ export default function RiskManagementHubPage() {
   const handleForceClose = async (row: ViolationAlertRow) => {
     try {
       const res = await api.admin.riskForceClose({ user_id: row.user_id, account_id: row.account_id })
-      if (res.ok && res.data.success) {
+      if (res.ok && res.data?.success) {
         toast.success(res.data.message || `All open trades for ${row.account_id} closed at market price.`)
         refetchAlerts()
         refetchStats()
       } else {
-        toast.error((!res.ok ? res.error : res.data.message) || `No open trades found on ${row.account_id} to force close`)
+        const errorMsg = (!res.ok ? res.error : res.data?.message) || `Failed to force close trades on ${row.account_id}`
+        toast.error(errorMsg)
       }
     } catch (err: any) {
       toast.error(err.message || 'Failed to force close trades')
