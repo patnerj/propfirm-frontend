@@ -2,6 +2,7 @@ import { PuckRenderer } from "@/components/puck/puck-renderer";
 import { MarketingHeader } from "@/components/marketing/header";
 import { PayoutTicker } from "@/components/payout-ticker";
 import { MarketingFooter } from "@/components/marketing/footer";
+import { getApiBaseUrl } from "@/lib/fxsim";
 
 export const dynamic = 'force-dynamic';
 
@@ -22,12 +23,14 @@ const defaultData = {
 
 async function getPageSchema() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_FXSIM_API || 'https://api.launchapropfirm.com/wp-json/fxsim/v1';
-    const res = await fetch(`${apiUrl}/page-schema`, { cache: 'no-store' });
-    const data = await res.json();
-    if (data) {
-      if (data.schema) return data.schema;
-      if (data.content) return data;
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/page-schema`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        if (data.schema) return data.schema;
+        if (data.content) return data;
+      }
     }
   } catch (err) {
     console.error("Error fetching page schema:", err);

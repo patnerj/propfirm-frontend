@@ -25,6 +25,18 @@ import type { ApiResult, ApiErr } from '@/types/api'
  * 3. '/api/wp' (Default relative fallback)
  */
 export function getApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    // Server-side (Node.js runtime / Next.js Server Components) requires absolute URL
+    const serverUrl =
+      process.env.FXSIM_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_FXSIM_API
+    if (serverUrl && (serverUrl.startsWith('http://') || serverUrl.startsWith('https://'))) {
+      return serverUrl.trim().replace(/\/$/, '')
+    }
+    return 'https://api.launchapropfirm.com/wp-json/fxsim/v1'
+  }
+
   const envUrl =
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.NEXT_PUBLIC_FXSIM_API ||

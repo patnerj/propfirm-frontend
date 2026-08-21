@@ -219,7 +219,8 @@ export const api = {
     payoutsList:  (status?: string)  => fxsim<AdminPayoutRow[]>('/admin/payouts',                         { query: { status }, cache: 5_000 }),
     payoutStatus: (id: number, status: string, note: string, extra?: { tx_reference?: string; proof_url?: string }) =>
       fxsim<{ success: boolean; status?: string; message?: string }>(`/admin/payouts/${id}/status`, { body: { status, note, ...(extra || {}) }, retries: 0 }),
-    challenges:   ()                 => fxsim<{ challenges: ChallengeAccount[]; pending_payouts: unknown[] }>('/admin/challenges', { cache: 8_000 }),
+    challenges:   (params?: { user_ids?: string | number[]; page?: number; limit?: number; search?: string; status?: string }) =>
+      fxsim<{ challenges: ChallengeAccount[]; total?: number; page?: number; pages?: number; limit?: number; pending_payouts: unknown[] }>('/admin/challenges', { query: params as any, cache: 8_000 }),
     trades:       ()                 => fxsim<Trade[]>('/admin/trades',                                  { cache: 10_000 }),
     log:          ()                 => fxsim<unknown[]>('/admin/log',                                   { cache: 15_000 }),
     pendingOrders: ()                => fxsim<PendingOrder[]>('/admin/pending-orders',                   { cache: 5_000 }),
@@ -384,6 +385,7 @@ export const api = {
       ingest_secret?: string; ingest_url?: string;
     }>('/admin/price-feed/health'),
     forcePrices:  () => fxsim<{ success: true; message: string }>('/admin/force-prices', { method: 'POST' }),
+    newsLockGet:  () => fxsim<{ success?: boolean; locked: boolean }>('/admin/news-lock', { cache: 0 }),
     newsLock:     (locked: boolean) => fxsim<{ success: true; locked: boolean }>('/admin/news-lock', { body: { locked } }),
     rateLimit:    (tier: string, limit: number) => fxsim<{ success: true; tier: string; limit: number }>('/admin/rate-limit', { body: { tier, limit } }),
     symbol:       (id: number, data: Partial<Symbol>) => fxsim<{ success: boolean }>(`/admin/symbol/${id}`, { body: data }),

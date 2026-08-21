@@ -26,12 +26,19 @@ export default function PublicTournamentArena() {
     try {
       setLoading(true)
       const [tRes, lRes] = await Promise.all([
-        api.competitions.get(id),
-        api.competitions.leaderboard(id)
+        api.tournaments.get(id),
+        api.tournaments.leaderboard(id)
       ])
       
       if (tRes.ok) setTournament(tRes.data)
-      if (lRes.ok) setLeaderboard(lRes.data)
+      if (lRes.ok) {
+        const lbData = lRes.data
+        if (Array.isArray(lbData)) {
+          setLeaderboard(lbData as any)
+        } else if (lbData && Array.isArray((lbData as any).leaderboard)) {
+          setLeaderboard((lbData as any).leaderboard)
+        }
+      }
     } finally {
       setLoading(false)
     }
@@ -40,13 +47,13 @@ export default function PublicTournamentArena() {
   const handleRegister = async () => {
     setRegistering(true)
     try {
-      const res = await api.competitions.register(id)
-      if (res.ok) {
+      const res = await api.tournaments.join(id)
+      if (res.ok && res.data.success) {
         setRegistered(true)
-        toast.success('Successfully registered for tournament!')
+        toast.success(res.data.message || 'Successfully registered for tournament!')
         fetchDetails()
       } else {
-        toast.error(res.error || 'Registration failed. Are you logged in?')
+        toast.error((!res.ok ? res.error : res.data.message) || 'Registration failed. Are you logged in?')
       }
     } finally {
       setRegistering(false)
@@ -180,8 +187,11 @@ export default function PublicTournamentArena() {
                     ) : (
                       leaderboard.map((row, index) => {
                         const isTop3 = index < 3
-                        const returnPct = Number(row.profit_pct)
+                        const returnPct = Number((row as any).roi_pct ?? (row as any).profit_pct ?? (row as any).return_pct ?? 0)
                         const isPositive = returnPct > 0
+                        const traderName = (row as any).display_name || (row as any).user_login || (row as any).trader_name || `Trader #${(row as any).user_id || index + 1}`
+                        const currentVal = Number((row as any).current_equity ?? (row as any).current_balance ?? (row as any).equity ?? 0)
+                        const rankNum = (row as any).rank || index + 1
                         
                         return (
                           <tr key={index} className={`transition-colors hover:bg-surface-muted/20 ${isTop3 ? 'bg-accent/5' : ''}`}>
@@ -192,12 +202,12 @@ export default function PublicTournamentArena() {
                                 index === 2 ? 'bg-warn/10 text-warn/80 border border-warn/20' :
                                 'bg-surface-muted text-text-muted font-medium'
                               }`}>
-                                {index + 1}
+                                {rankNum}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="font-bold text-text flex items-center gap-2">
-                                {row.trader_name}
+                                {traderName}
                                 {index === 0 && <Trophy className="h-3 w-3 text-warn" />}
                               </div>
                             </td>
@@ -211,7 +221,7 @@ export default function PublicTournamentArena() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right font-mono font-medium text-text">
-                              ${Number(row.current_balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
                         )

@@ -13,7 +13,7 @@ export default function PublicTournamentsPage() {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const res = await api.competitions.list()
+        const res = await api.tournaments.list()
         if (res.ok) setTournaments(res.data)
       } finally {
         setLoading(false)

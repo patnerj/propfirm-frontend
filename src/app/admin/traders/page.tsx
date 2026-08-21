@@ -139,9 +139,19 @@ export default function TradersHubPage() {
     staleTime: 10000,
   })
 
+  // User IDs for the active page to scope challenge fetching
+  const userIds = useMemo(() => {
+    const raw = usersData?.data || []
+    return raw.map(u => Number(u.user_id)).filter(Boolean)
+  }, [usersData?.data])
+
   const { data: challengesData } = useQuery({
-    queryKey: ['admin-challenges-list'],
-    queryFn: () => api.admin.challenges().then(res => res.ok ? res.data.challenges : []),
+    queryKey: ['admin-challenges-list', userIds],
+    queryFn: () => {
+      if (userIds.length === 0) return Promise.resolve([])
+      return api.admin.challenges({ user_ids: userIds.join(',') }).then(res => res.ok ? res.data.challenges : [])
+    },
+    enabled: userIds.length > 0 || !usersLoading,
     staleTime: 10000,
   })
 

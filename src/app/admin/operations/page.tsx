@@ -188,16 +188,18 @@ export default function OperationsHubPage() {
   useEffect(() => {
     Promise.all([
       api.admin.maintenanceGet(),
-      api.admin.whitelabelGet()
-    ]).then(([maintRes, wlRes]) => {
+      api.admin.whitelabelGet(),
+      api.admin.newsLockGet()
+    ]).then(([maintRes, wlRes, newsRes]) => {
       const maintEnabled = Boolean(maintRes.ok && maintRes.data?.enabled)
       const wlData = wlRes.ok ? (wlRes.data as any) : {}
       const pauseTrading = wlData?.pause_trading === '1' || wlData?.pause_trading === 1 || wlData?.pause_trading === true
+      const newsLocked = Boolean(newsRes.ok && newsRes.data?.locked)
       const pauseRegistrations = wlData?.pause_registrations === '1' || wlData?.pause_registrations === 1 || wlData?.pause_registrations === true
 
       setEmergencyStates({
         maintenanceMode: maintEnabled,
-        freezeTrading: pauseTrading,
+        freezeTrading: pauseTrading || newsLocked,
         pauseRegistrations: pauseRegistrations
       })
     }).catch(err => {
