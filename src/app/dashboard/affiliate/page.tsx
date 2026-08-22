@@ -62,9 +62,22 @@ export default function AffiliatePage() {
   }, [me?.payout_method, me?.payout_destination])
 
   const saveMethod = async () => {
-    if (!destination.trim()) { toast.error('Enter your payout destination.'); return }
+    const dest = destination.trim()
+    if (!dest) { toast.error('Enter your payout destination.'); return }
+    if (method === 'usdt_trc20' && !/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(dest)) {
+      toast.error('Invalid TRC20 address. Must start with T and be 34 characters.')
+      return
+    }
+    if (method === 'usdt_bep20' && !/^0x[a-fA-F0-9]{40}$/.test(dest)) {
+      toast.error('Invalid BEP20 address. Must be a valid 42-character 0x hex address.')
+      return
+    }
+    if (method === 'wise' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dest)) {
+      toast.error('Invalid Wise email address.')
+      return
+    }
     setSavingMethod(true)
-    const r = await api.affiliateSetPayout(method, destination.trim())
+    const r = await api.affiliateSetPayout(method, dest)
     setSavingMethod(false)
     if (r.ok && r.data.success) { toast.success('Payout method saved.'); load() }
     else toast.error(r.ok ? (r.data.message || 'Could not save.') : r.error)

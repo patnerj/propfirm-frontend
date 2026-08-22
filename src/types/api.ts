@@ -123,7 +123,9 @@ export interface PayoutItem {
   id:               number
   challenge_id:     number
   name?:            string
+  trader_name?:     string
   username?:        string
+  plan_name?:       string
   amount_requested: number
   trader_amount:    number
   firm_amount:      number
@@ -337,10 +339,11 @@ export interface ChallengeAccount {
   created_at:         string
   ip_mismatched?:     boolean
   // Joined from plan in /challenge/my
-  plan_name?:         string
-  account_size?:      number | string
+  plan_name?:           string
+  account_size?:        number | string
   funded_profit_split?: number | string
-  drawdown_type?:     'static' | 'trailing' | 'eod_trailing'
+  custom_profit_split?: number | string | null
+  drawdown_type?:       'static' | 'trailing' | 'eod_trailing'
   p1_profit_target?:  number | string
   p1_daily_dd?:       number | string
   p1_max_dd?:         number | string

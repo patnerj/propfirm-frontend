@@ -109,7 +109,8 @@ function CheckoutInner() {
   }, [plan, params, couponInfo])
 
   const price = plan ? toNum(plan.price) : 0
-  const isFree = price <= 0
+  const finalPrice = couponInfo ? toNum(couponInfo.final) : price
+  const isFree = finalPrice <= 0
 
   // 3. Fetch Config on Gateway Step
   useEffect(() => {
@@ -157,13 +158,14 @@ function CheckoutInner() {
     if (!plan) return
     setLoading(true)
     setError(null)
-    const res = await api.challengeStart(plan.id)
+    const couponToSend = couponInfo ? couponInfo.code : undefined
+    const res = await api.challengeStart(plan.id, couponToSend)
     setLoading(false)
     if (res.ok && !res.data.requires_payment) {
       toast.success('Challenge started!')
       router.push('/dashboard?started=' + plan.id)
     } else {
-      setError(res.ok ? 'Unable to start challenge' : res.error)
+      setError(res.ok ? (res.data.message || 'Unable to start challenge') : res.error)
     }
   }
 
@@ -365,7 +367,7 @@ function ReviewStep({
         </div>
       </div>
 
-      {!isFree && (
+      {(toNum(plan.price) > 0 || couponInfo) && (
         <div className="space-y-3">
           {!couponInfo ? (
             <div>
@@ -397,9 +399,9 @@ function ReviewStep({
       )}
 
       <div className="flex items-center justify-between p-5 rounded-xl bg-accent/5 border border-accent/20">
-        <span className="font-semibold">{isFree ? 'Free trial' : 'Total due today'}</span>
+        <span className="font-semibold">{isFree ? (couponInfo ? 'Total (100% Free)' : 'Free trial') : 'Total due today'}</span>
         <div className="text-3xl font-bold tabular tracking-tight text-accent flex items-baseline gap-2">
-          {!isFree && couponInfo && (
+          {couponInfo && (
             <span className="text-base font-normal text-text-muted line-through">{fmtUSD(couponInfo.original)}</span>
           )}
           {isFree ? '$0.00' : fmtUSD(couponInfo ? couponInfo.final : plan.price)}

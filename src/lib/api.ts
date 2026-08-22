@@ -102,7 +102,7 @@ export const api = {
 
   // ── Challenge ─────────────────────────────────────────────────────────
   challengeMy:      ()           => fxsim<ChallengeAccount[]>('/challenge/my', { cache: 8_000 }),
-  challengeStart:   (planId: number) => fxsim<{ success: boolean; message?: string; requires_payment?: boolean; plan_id?: number; amount?: number }>('/challenge/start', { body: { plan_id: planId } }),
+  challengeStart:   (planId: number, couponCode?: string) => fxsim<{ success: boolean; message?: string; requires_payment?: boolean; plan_id?: number; amount?: number }>('/challenge/start', { body: { plan_id: planId, coupon_code: couponCode } }),
   challengeMetrics: (id: number) => fxsim<ChallengeMetrics>(`/challenge/${id}/metrics`, { cache: 6_000 }),
   challengeMt5:     (id: number) => fxsim<{ ready: boolean; message?: string; mt5_login?: string; mt5_password?: string; mt5_server?: string; mt5_account_type?: string }>(`/challenge/${id}/mt5-details`, { cache: 30_000 }),
   challengePayout:  (id: number, method: string, address: string) =>

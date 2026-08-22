@@ -104,7 +104,7 @@ export default function PayoutsPage() {
                 </div>
               ) : funded.map((c) => {
                 const profit = toNum(c.current_balance) - toNum(c.starting_balance)
-                const splitPct = toNum(c.funded_profit_split ?? 80)
+                const splitPct = c.custom_profit_split !== null && c.custom_profit_split !== undefined ? toNum(c.custom_profit_split) : toNum(c.funded_profit_split ?? 80)
                 const traderShare = profit > 0 ? (profit * splitPct) / 100 : 0
                 return (
                   <div key={c.id} className="rounded-lg border border-border-subtle p-4 hover:border-accent transition-colors">
@@ -260,7 +260,7 @@ function RequestPayoutDialog({
   const [success, setSuccess] = useState(false)
 
   const profit = toNum(challenge.current_balance) - toNum(challenge.starting_balance)
-  const splitPct = toNum(challenge.funded_profit_split ?? 80)
+  const splitPct = challenge.custom_profit_split !== null && challenge.custom_profit_split !== undefined ? toNum(challenge.custom_profit_split) : toNum(challenge.funded_profit_split ?? 80)
   const traderShare = (profit * splitPct) / 100
   const firmShare   = profit - traderShare
 
