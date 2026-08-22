@@ -21,6 +21,8 @@ interface Props {
   positions?: Position[] | null
   /** Mobile: callback to open the market watch sheet */
   onOpenWatchlist?: () => void
+  /** Trading Plan rules (e.g. stop loss requirement) */
+  plan?: any | null
 }
 
 // Default interval the chart opens on. Users change timeframe with TradingView's
@@ -58,7 +60,7 @@ function loadTvScript(): Promise<void> {
   return tvScriptPromise
 }
 
-export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenWatchlist }: Props) {
+export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenWatchlist, plan }: Props) {
   const active  = useTerminal((s) => s.active)
   const meta    = useTerminal((s) => s.getMeta(active))
   const metaRef = useRef(meta)
@@ -107,7 +109,9 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
   useEffect(() => { compactRef.current = compact }, [compact])
 
   // 1-Click Trade state
+  const isSlRequired = Boolean(plan?.stop_loss_required || plan?.require_stop_loss)
   const [oneClickLot, setOneClickLot] = useState('0.10')
+  const [oneClickSlPips, setOneClickSlPips] = useState('30')
   const [busy, setBusy] = useState<'buy' | 'sell' | null>(null)
   const [showOneClick, setShowOneClick] = useState(true)
 
@@ -132,6 +136,29 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
       toast.error('Invalid lot size')
       return
     }
+
+    const slPipsNum = toNum(oneClickSlPips)
+    if (isSlRequired && (!slPipsNum || slPipsNum <= 0)) {
+      toast.error('Stop Loss is required by this plan (enter SL distance in pips)')
+      return
+    }
+
+    const pSize = pipSize(active)
+    const bid = toNum(tick?.bid)
+    const ask = toNum(tick?.ask)
+    const digits = meta?.digits || symbolDigits(active)
+
+    let calculatedSl: number | null = null
+    if (isSlRequired || slPipsNum > 0) {
+      if (type === 'buy') {
+        const currentAsk = ask || bid || 0
+        calculatedSl = currentAsk > 0 ? Number((currentAsk - slPipsNum * pSize).toFixed(digits)) : null
+      } else {
+        const currentBid = bid || ask || 0
+        calculatedSl = currentBid > 0 ? Number((currentBid + slPipsNum * pSize).toFixed(digits)) : null
+      }
+    }
+
     setBusy(type)
 
     const optId = -Math.floor(Math.random() * 1000000)
@@ -142,7 +169,7 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
       lot_size: lotSize,
       open_price: type === 'buy' ? (ask || bid || 0) : (bid || ask || 0),
       open_time: new Date().toISOString(),
-      sl: null,
+      sl: calculatedSl,
       tp: null,
       status: 'simulated'
     }
@@ -152,13 +179,13 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
       symbol: active,
       type,
       lot_size: lotSize,
-      sl: null,
+      sl: calculatedSl,
       tp: null,
     })
     setBusy(null)
     if (res.ok && res.data.success) {
       playOrderSuccessSound()
-      toast.success(`${type.toUpperCase()} ${lotSize} ${active} opened`)
+      toast.success(`${type.toUpperCase()} ${lotSize} ${active} opened${calculatedSl ? ` (SL: ${calculatedSl})` : ''}`)
       invalidateFxsim('/positions')
       invalidateFxsim('/account')
       usePrices.getState().refresh()
@@ -454,6 +481,20 @@ export const ChartPanel = memo(function ChartPanel({ compact, positions, onOpenW
               />
               <span className="text-[8px] text-text-muted text-center uppercase tracking-tighter mt-0.5">Lots</span>
             </div>
+
+            {isSlRequired && (
+              <div className="flex flex-col justify-center px-1 border-l border-border-subtle pl-1.5">
+                <input 
+                  type="text"
+                  value={oneClickSlPips}
+                  onChange={(e) => setOneClickSlPips(e.target.value.replace(/[^\d.]/g, ''))}
+                  className="w-12 h-7 text-center bg-surface border border-rose-500/50 rounded-md text-xs tabular font-bold text-rose-300 focus-ring focus:border-rose-400"
+                  placeholder="30"
+                  title="Stop loss distance in pips (Required by plan)"
+                />
+                <span className="text-[8px] text-rose-400 text-center uppercase tracking-tighter mt-0.5 font-bold">SL (Pips)</span>
+              </div>
+            )}
 
             <div className="flex flex-col gap-0.5 items-center justify-center">
               <button 

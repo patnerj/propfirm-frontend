@@ -68,9 +68,19 @@ export default function PublicProfilePage() {
                   <div className="flex-1">
                     <h1 className="text-3xl font-bold tracking-tight">{profile.name || 'Anonymous Trader'}</h1>
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3">
-                      <Badge tone="success" className="text-xs">
-                        Funded Trader
-                      </Badge>
+                      {profile.is_funded ? (
+                        <Badge tone="success" className="text-xs">
+                          Funded Trader
+                        </Badge>
+                      ) : profile.has_passed ? (
+                        <Badge tone="info" className="text-xs">
+                          Challenge Passed
+                        </Badge>
+                      ) : (
+                        <Badge tone="neutral" className="text-xs">
+                          Active Trader
+                        </Badge>
+                      )}
                       <span className="text-sm text-text-muted flex items-center gap-1">
                         <TrendingUp className="h-4 w-4" /> {profile.total_payouts || 0} Payouts Received
                       </span>

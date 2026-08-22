@@ -19,7 +19,7 @@ export function AffiliateLeaderboard() {
     queryFn: async () => {
       try {
         const base = getApiBaseUrl();
-        const res = await fetch(`${base}/stats/leaderboard`);
+        const res = await fetch(`${base}/stats/affiliate-leaderboard`);
         if (!res.ok) return [];
         const data = await res.json();
         return Array.isArray(data) ? data : (data?.leaderboard || []);

@@ -168,14 +168,17 @@ export function TraderSupport() {
           </div>
 
           <div className="space-y-4 max-h-[500px] overflow-y-auto mb-4 p-2">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.sender_type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-3 ${msg.sender_type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-surface border border-border text-text'}`}>
-                  <div className="text-xs opacity-70 mb-1">{msg.sender_type === 'user' ? 'You' : 'Support Agent'} - {new Date(msg.created_at).toLocaleString()}</div>
-                  <div className="whitespace-pre-wrap">{msg.message}</div>
+            {messages.map((msg) => {
+              const isMe = msg.sender_type === 'trader' || msg.sender_type === 'user'
+              return (
+                <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-lg p-3 ${isMe ? 'bg-primary text-primary-foreground' : 'bg-surface border border-border text-text'}`}>
+                    <div className="text-xs opacity-70 mb-1">{isMe ? 'You' : 'Support Agent'} - {new Date(msg.created_at).toLocaleString()}</div>
+                    <div className="whitespace-pre-wrap">{msg.message}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {selectedTicket.status !== 'closed' ? (

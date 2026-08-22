@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatCard, StatGrid } from '@/components/ui/stat-card'
-import { Search, ChevronDown, TrendingUp, TrendingDown, BarChart3, Tag, MessageSquare, Save, History, Trophy, Award, DollarSign } from 'lucide-react'
+import { Search, ChevronDown, TrendingUp, TrendingDown, BarChart3, Tag, MessageSquare, Save, History, Trophy, Award, DollarSign, Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function HistoryPage() {
@@ -80,6 +80,38 @@ export default function HistoryPage() {
     }
   }
 
+  const handleExportCSV = () => {
+    if (!filtered.length) {
+      toast.error('No trades available to export.')
+      return
+    }
+    const headers = ['ID', 'Symbol', 'Side', 'Lots', 'Open Price', 'Close Price', 'P&L', 'Commission', 'Swap', 'Opened At', 'Closed At', 'Note']
+    const rows = filtered.map((t) => [
+      t.id,
+      t.symbol,
+      (t.type || '').toUpperCase(),
+      t.lot_size,
+      t.open_price,
+      t.close_price,
+      t.pnl,
+      t.commission ?? 0,
+      t.swap ?? 0,
+      t.opened_at ?? '',
+      t.closed_at ?? '',
+      `"${(t.note || '').replace(/"/g, '""')}"`
+    ])
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `trade-history-${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(`Exported ${filtered.length} trades to CSV.`)
+  }
+
   const filtered = useMemo(() => trades.filter((t) => {
     if (query && !(t.symbol ?? '').toLowerCase().includes(query.toLowerCase())) return false
     if (filter === 'buy'  && t.type !== 'buy')  return false
@@ -130,10 +162,10 @@ export default function HistoryPage() {
         />
       </StatGrid>
 
-      {/* Filters */}
+      {/* Filters & Export */}
       <Card>
-        <CardContent className="p-4 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
             <Input
               value={query}
@@ -142,18 +174,30 @@ export default function HistoryPage() {
               className="pl-9"
             />
           </div>
-          <div className="flex gap-1 bg-surface-muted p-1 rounded-md text-2xs">
-            {(['all', 'buy', 'sell', 'win', 'loss'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 h-8 rounded-md transition-colors focus-ring ${
-                  filter === f ? 'bg-surface text-text font-semibold shadow-sm' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {f.toUpperCase()}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex gap-1 bg-surface-muted p-1 rounded-md text-2xs">
+              {(['all', 'buy', 'sell', 'win', 'loss'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 h-8 rounded-md transition-colors focus-ring ${
+                    filter === f ? 'bg-surface text-text font-semibold shadow-sm' : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs border-border-subtle hover:bg-surface-muted shrink-0"
+              title="Export filtered trade history as CSV"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from 'sonner'
+import { useAuth } from '@/store/auth'
 
 function formatMoney(val: number | string | undefined | null) {
   const num = typeof val === 'string' ? parseFloat(val) : (val ?? 0)
@@ -89,6 +90,24 @@ export default function PvpArenaLobbyPage() {
     },
     onError: (err: any) => {
       toast.error('Join Error: ' + err.message)
+    },
+  })
+
+  const user = useAuth((s) => s.user)
+  const currentUserId = user?.id ? Number(user.id) : 0
+
+  const cancelMatchMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.pvp.cancel(id)
+      if (!res.ok) throw new Error(res.error || 'Failed to cancel match.')
+      return res.data
+    },
+    onSuccess: () => {
+      toast.success('🛡️ Match cancelled and stake refunded.')
+      queryClient.invalidateQueries({ queryKey: ['pvp-lobby-data'] })
+    },
+    onError: (err: any) => {
+      toast.error('Cancel Error: ' + err.message)
     },
   })
 
@@ -439,14 +458,29 @@ export default function PvpArenaLobbyPage() {
                     {/* Card Footer Actions */}
                     <CardFooter className="p-4 bg-[#0B0F19]/80 border-t border-[#1F2937]/70 flex items-center justify-between">
                       {isWaiting ? (
-                        <Button
-                          onClick={() => joinMatchMutation.mutate(match.id)}
-                          loading={joinMatchMutation.isPending}
-                          className="w-full bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-700 hover:to-red-700 text-white font-extrabold gap-1.5 shadow-md shadow-amber-600/20"
-                        >
-                          <Swords className="h-4 w-4" />
-                          Accept Challenge ({formatMoney(match.stake_amount)})
-                        </Button>
+                        match.creator_user_id && Number(match.creator_user_id) === currentUserId ? (
+                          <div className="flex items-center gap-2 w-full">
+                            <span className="text-xs text-amber-400/90 font-medium flex-1 truncate">Waiting for opponent...</span>
+                            <Button
+                              onClick={() => cancelMatchMutation.mutate(match.id)}
+                              loading={cancelMatchMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold text-xs shrink-0"
+                            >
+                              Withdraw & Refund
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => joinMatchMutation.mutate(match.id)}
+                            loading={joinMatchMutation.isPending}
+                            className="w-full bg-gradient-to-r from-amber-600 to-red-600 hover:from-amber-700 hover:to-red-700 text-white font-extrabold gap-1.5 shadow-md shadow-amber-600/20"
+                          >
+                            <Swords className="h-4 w-4" />
+                            Accept Challenge ({formatMoney(match.stake_amount)})
+                          </Button>
+                        )
                       ) : isActive ? (
                         <Link href={`/arena/${match.id}`} className="w-full">
                           <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold gap-1.5 shadow-lg shadow-red-600/30">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, BarChart3, Clock, ListOrdered, PanelLeftClose, PanelLeftOpen, ShoppingCart, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -81,9 +81,14 @@ export default function TradingTerminalPage() {
     return () => pricesStop()
   }, [pricesStart, pricesStop])
 
-  // Mutations (like placing a trade) don't need manual polling anymore
-  // because the backend SSE stream will push the new positions/account within 2 seconds.
-  const refreshAll = () => {}
+  // Refresh callback for trade mutations (close, partial close, SL/TP update, cancel)
+  const refreshAll = useCallback(async () => {
+    invalidateFxsim('/positions')
+    invalidateFxsim('/account')
+    invalidateFxsim('/history')
+    invalidateFxsim('/pending-orders')
+    await usePrices.getState().refresh()
+  }, [])
 
   // One-time fetch for challenges (in case user has no active account and needs the lock screen)
   useEffect(() => {
@@ -279,16 +284,31 @@ function DesktopLayout({
     setIsClosingAll(true)
     const toastId = toast.loading(`Closing ${positions.length} position(s)...`)
     try {
-      await Promise.all(positions.map((p) => api.close(p.id)))
-      playOrderCloseSound()
+      const results = await Promise.all(positions.map((p) => api.close(p.id)))
+      const failed = results.filter((r) => !r.ok || !(r.data as any)?.success)
+      const succeeded = results.length - failed.length
+
       invalidateFxsim('/positions')
       invalidateFxsim('/account')
       invalidateFxsim('/history')
       await usePrices.getState().refresh()
-      toast.success(`Closed all ${positions.length} position(s)!`, { id: toastId })
       onChanged?.()
-    } catch {
-      toast.error('Failed to close some positions.', { id: toastId })
+
+      if (succeeded > 0) {
+        playOrderCloseSound()
+      }
+
+      if (failed.length === 0) {
+        toast.success(`Closed all ${positions.length} position(s)!`, { id: toastId })
+      } else if (succeeded === 0) {
+        const first = failed[0] as any
+        const errMsg = first && !first.ok ? first.error : first?.data?.error || first?.data?.message || 'Failed to close positions.'
+        toast.error(`Could not close positions: ${errMsg}`, { id: toastId })
+      } else {
+        toast.warning(`Closed ${succeeded} position(s), but ${failed.length} failed to close.`, { id: toastId })
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to close some positions.', { id: toastId })
     } finally {
       setIsClosingAll(false)
     }
@@ -304,6 +324,7 @@ function DesktopLayout({
 
   return (
     <div className="flex flex-col gap-2 h-[calc(100dvh-4.5rem)] min-h-[600px]">
+      <AccountStrip account={account} openPnL={openPnL} metrics={metrics} />
       <PanelGroup orientation="horizontal" className="flex-1 min-h-0 w-full rounded-lg">
         {/* Left: market watch */}
         <Panel
@@ -363,7 +384,7 @@ function DesktopLayout({
             <Panel defaultSize="70%" minSize="30%">
               <section className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col h-full min-h-0">
                 <SectionErrorBoundary>
-                  <ChartPanel positions={positions} />
+                  <ChartPanel positions={positions} plan={plan || metrics?.plan} />
                 </SectionErrorBoundary>
               </section>
             </Panel>
@@ -598,7 +619,7 @@ function MobileLayout({
       {/* Chart — fills remaining space; ChartPanel header has symbol + tap-to-change */}
       <div className="flex-1 mx-4 rounded-lg border border-border overflow-hidden min-h-0">
         <SectionErrorBoundary>
-          <ChartPanel compact positions={positions} onOpenWatchlist={() => setSheet('watchlist')} />
+          <ChartPanel compact positions={positions} plan={plan || metrics?.plan} onOpenWatchlist={() => setSheet('watchlist')} />
         </SectionErrorBoundary>
       </div>
 

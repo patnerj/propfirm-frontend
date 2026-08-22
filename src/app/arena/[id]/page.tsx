@@ -90,6 +90,22 @@ export default function PvpLiveBattleArenaPage() {
     },
   })
 
+  // Cancel / Withdraw Mutation
+  const cancelMatchMutation = useMutation({
+    mutationFn: async () => {
+      const res = await api.pvp.cancel(matchId)
+      if (!res.ok) throw new Error(res.error || 'Cancel failed.')
+      return res.data
+    },
+    onSuccess: (data) => {
+      toast.success('🛡️ Match Cancelled! Stake refunded.')
+      router.push('/arena')
+    },
+    onError: (err: any) => {
+      toast.error('Cancel Error: ' + err.message)
+    },
+  })
+
   const match = liveState?.match
   const isCompleted = match?.status === 'completed'
   const isActive = match?.status === 'active'
@@ -417,6 +433,22 @@ export default function PvpLiveBattleArenaPage() {
                       >
                         <StopCircle className="h-3.5 w-3.5 mr-1" />
                         Call Match Conclusion
+                      </Button>
+                    </div>
+                  )}
+                  {isWaiting && currentUserId === Number(match?.creator_user_id) && (
+                    <div className="pt-4 border-t border-[#1F2937] flex flex-col sm:flex-row items-center justify-between gap-3 bg-amber-500/5 p-4 rounded-xl border border-amber-500/20">
+                      <div className="text-xs text-amber-300">
+                        You created this challenge. It is currently waiting for an opponent. You may withdraw and receive a 100% stake refund.
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => cancelMatchMutation.mutate()}
+                        loading={cancelMatchMutation.isPending}
+                        className="font-bold text-xs h-9 shrink-0 shadow-md shadow-red-900/30"
+                      >
+                        Withdraw Challenge & Refund
                       </Button>
                     </div>
                   )}

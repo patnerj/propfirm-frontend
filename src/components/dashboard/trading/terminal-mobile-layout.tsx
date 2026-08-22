@@ -23,11 +23,12 @@ interface Props {
   openPnL: number
   positions: Position[] | null
   pending: PendingOrder[] | null
+  metrics?: import('@/types/api').ChallengeMetrics | null
 }
 
 type Sheet = null | 'watchlist' | 'order' | 'positions' | 'pending'
 
-export function TerminalMobileLayout({ account, challenge, openPnL, positions, pending }: Props) {
+export function TerminalMobileLayout({ account, challenge, openPnL, positions, pending, metrics }: Props) {
   const [sheet, setSheet] = useState<Sheet>(null)
   const active = useTerminal((s) => s.active)
   const pendingCount = pending?.filter((o) => o.status === 'pending').length
@@ -36,13 +37,13 @@ export function TerminalMobileLayout({ account, challenge, openPnL, positions, p
     <div className="flex flex-col gap-3 h-[calc(100dvh-6rem)] -mx-3 -my-3 md:-mx-4 md:-my-4">
       {/* Account strip — compact */}
       <div className="px-4 pt-4 shrink-0">
-        <AccountStrip account={account} openPnL={openPnL} compact />
+        <AccountStrip account={account} openPnL={openPnL} metrics={metrics} compact />
       </div>
 
       {/* Chart — fills remaining space */}
       <div className="flex-1 mx-4 rounded-lg border border-border overflow-hidden min-h-0">
         <SectionErrorBoundary>
-          <ChartPanel compact onOpenWatchlist={() => setSheet('watchlist')} />
+          <ChartPanel compact positions={positions} plan={(account as any)?.plan || (challenge as any)?.plan || metrics?.plan} onOpenWatchlist={() => setSheet('watchlist')} />
         </SectionErrorBoundary>
       </div>
 

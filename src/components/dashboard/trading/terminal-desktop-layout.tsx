@@ -28,9 +28,10 @@ interface Props {
   openPnL: number
   positions: Position[] | null
   pending: PendingOrder[] | null
+  metrics?: import('@/types/api').ChallengeMetrics | null
 }
 
-export function TerminalDesktopLayout({ account, challenge, openPnL, positions, pending }: Props) {
+export function TerminalDesktopLayout({ account, challenge, openPnL, positions, pending, metrics }: Props) {
   const [tab, setTab] = useState<Tab>('positions')
 
   const mw  = useCollapsiblePanel(STORAGE_KEYS.termMw, 5)
@@ -47,7 +48,7 @@ export function TerminalDesktopLayout({ account, challenge, openPnL, positions, 
 
   return (
     <div className="flex flex-col gap-3 h-[calc(100dvh-6.5rem)] min-h-[640px]">
-      <AccountStrip account={account} openPnL={openPnL} />
+      <AccountStrip account={account} openPnL={openPnL} metrics={metrics} />
 
       <PanelGroup
         orientation="horizontal"
@@ -108,7 +109,7 @@ export function TerminalDesktopLayout({ account, challenge, openPnL, positions, 
             <Panel defaultSize="70" minSize="30">
               <section className="rounded-lg border border-border bg-surface overflow-hidden flex flex-col h-full min-h-0">
                 <SectionErrorBoundary>
-                  <ChartPanel />
+                  <ChartPanel positions={positions} plan={(account as any)?.plan || (challenge as any)?.plan || metrics?.plan} />
                 </SectionErrorBoundary>
               </section>
             </Panel>

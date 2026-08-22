@@ -144,7 +144,8 @@ export const api = {
     join:     (id: number) => fxsim<{ success: boolean; message: string; participant_id?: number; tournament_id?: number }>(`/tournaments/${id}/join`, { method: 'POST' }),
     leaderboard: (id: number) => fxsim<{ tournament: import('../types/api').Competition; leaderboard: import('../types/api').LeaderboardRow[] }>(`/tournaments/${id}/leaderboard`, { public: true, cache: 0 }),
   },
-  profile: (id: number) => fxsim<{ id: number; name: string; badges: any[]; total_payouts: number }>(`/profile/${id}`, { public: true, cache: 30_000 }),
+  profile: (id: number) => fxsim<{ id: number; name: string; is_funded: boolean; has_passed: boolean; badges: string[]; total_payouts: number }>(`/profile/${id}`, { public: true, cache: 30_000 }),
+  affiliateLeaderboard: () => fxsim<Array<{ name: string; earned: number }>>('/stats/affiliate-leaderboard', { public: true, cache: 60_000 }),
   // ── Payments ──────────────────────────────────────────────────────────
   paymentConfig:    ()           => fxsim<PaymentConfig>('/payment/config', { cache: 60_000 }),
   paymentCreate:    (planId: number, gateway: string, couponCode?: string) =>
@@ -499,5 +500,7 @@ export const api = {
       fxsim<{ success: boolean; action: string; lot_size: number; exec_price: number; tick_pnl: number; new_pnl: number; message: string }>(`/pvp/match/${id}/order`, { body: data }),
     settle: (id: number) =>
       fxsim<{ success: boolean; winner_id: number; prize_pool: number; rake: number; message: string }>(`/pvp/match/${id}/settle`, { body: {} }),
+    cancel: (id: number) =>
+      fxsim<{ success: boolean; message?: string; error?: string }>(`/pvp/match/${id}/cancel`, { body: {} }),
   },
 }
