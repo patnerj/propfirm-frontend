@@ -124,7 +124,6 @@ export default function PvpLiveBattleArenaPage() {
   const leadDelta = liveState?.lead_delta ?? 0
 
   const [sendingChat, setSendingChat] = useState(false)
-  const spectatorCount = Math.max(3, (match?.creator_trades_count ?? 0) + (match?.challenger_trades_count ?? 0) + 1 + (Number(matchId || 0) % 7))
 
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -171,9 +170,9 @@ export default function PvpLiveBattleArenaPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-gray-400">
-            <Radio className="h-3 w-3 text-red-500 animate-ping" />
-            <span>{spectatorCount} Spectators In Stadium</span>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-gray-300 bg-red-950/40 border border-red-500/30 px-2.5 py-1 rounded-md">
+            <Radio className="h-3 w-3 text-red-500 animate-pulse" />
+            <span className="font-semibold tracking-wider text-red-300">LIVE BROADCAST</span>
           </div>
 
           <Button

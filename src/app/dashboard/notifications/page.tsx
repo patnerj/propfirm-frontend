@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
@@ -15,31 +15,62 @@ import { cn } from '@/lib/cn'
 
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [page, setPage] = useState(1)
+  const [items, setItems] = useState<Notification[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const { data, isPending, refetch } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', page],
     queryFn: async () => {
-      const res = await api.notifications()
+      const res = await api.notifications(page, 20)
       if (!res.ok) throw new Error('Failed to fetch')
       return res.data
     },
     refetchInterval: 20_000,
   })
 
-  const loading = isPending && !data
+  useEffect(() => {
+    if (data) {
+      if (page === 1) {
+        setItems(data.notifications)
+      } else {
+        setItems(prev => {
+          const ids = new Set(prev.map(p => p.id))
+          const fresh = data.notifications.filter(n => !ids.has(n.id))
+          return [...prev, ...fresh]
+        })
+      }
+      setHasMore(!!data.has_more)
+      setTotalCount(data.total ?? data.notifications.length)
+      setUnreadCount(data.unread_count ?? 0)
+    }
+  }, [data, page])
+
+  const loading = isPending && items.length === 0
 
   const list = useMemo(() => {
-    if (!data) return []
-    return filter === 'unread' ? data.notifications.filter((n) => !n.is_read) : data.notifications
-  }, [data, filter])
+    return filter === 'unread' ? items.filter((n) => !n.is_read) : items
+  }, [items, filter])
 
   const markAllRead = async () => {
     await api.notificationsRead([])
+    setPage(1)
     refetch()
   }
+
   const markOneRead = async (id: number) => {
     await api.notificationsRead([id])
+    setItems(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n))
+    setUnreadCount(u => Math.max(0, u - 1))
     refetch()
+  }
+
+  const handleLoadMore = () => {
+    if (!hasMore || isPending) return
+    setPage(p => p + 1)
   }
 
   return (
@@ -51,9 +82,9 @@ export default function NotificationsPage() {
         icon={Bell}
         badge={{ label: 'Inbox', tone: 'accent' }}
         actions={
-          data && data.unread_count > 0 ? (
+          unreadCount > 0 ? (
             <Button variant="outline" size="sm" onClick={markAllRead}>
-              <CheckCheck className="h-3.5 w-3.5 mr-1" /> Mark all read ({data.unread_count})
+              <CheckCheck className="h-3.5 w-3.5 mr-1" /> Mark all read ({unreadCount})
             </Button>
           ) : undefined
         }
@@ -69,8 +100,8 @@ export default function NotificationsPage() {
             }`}
           >
             {f.toUpperCase()}
-            {f === 'unread' && data && data.unread_count > 0 && (
-              <span className="ml-1.5 text-accent font-bold">{data.unread_count}</span>
+            {f === 'unread' && unreadCount > 0 && (
+              <span className="ml-1.5 text-accent font-bold">{unreadCount}</span>
             )}
           </button>
         ))}
@@ -93,9 +124,24 @@ export default function NotificationsPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-border-subtle">
-              {list.map((n, i) => <NotificationRow key={n.id} n={n} index={i} onRead={() => markOneRead(n.id)} />)}
-            </div>
+            <>
+              <div className="divide-y divide-border-subtle">
+                {list.map((n, i) => <NotificationRow key={n.id} n={n} index={i} onRead={() => markOneRead(n.id)} />)}
+              </div>
+              {hasMore && (
+                <div className="p-4 border-t border-border-subtle flex justify-center bg-surface-muted/30">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleLoadMore} 
+                    loading={isPending}
+                    className="text-xs"
+                  >
+                    Load More Notifications ({items.length} of {totalCount})
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

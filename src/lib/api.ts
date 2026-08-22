@@ -59,6 +59,12 @@ export const api = {
     verifyEmail: (token: string) => fxsim<{ status: 'success' | 'expired' | 'invalid'; message: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}&format=json`, { public: true }),
     twoFactorStatus:    () => fxsim<{ enabled: boolean }>('/auth/2fa/status', { cache: 60_000 }),
     twoFactorToggle:    (enable: boolean) => fxsim<{ success: true; enabled: boolean }>('/auth/2fa/toggle', { body: { enable } }),
+    changePassword:     (body: { current_password: string; new_password: string }) =>
+      fxsim<{ success: boolean; message: string }>('/auth/change-password', { method: 'POST', body }),
+  },
+  preferences: {
+    get:  () => fxsim<{ success: boolean; preferences: Record<string, boolean> }>('/user/preferences', { cache: 0 }),
+    save: (preferences: Record<string, boolean>) => fxsim<{ success: boolean; preferences: Record<string, boolean> }>('/user/preferences', { method: 'POST', body: { preferences } }),
   },
 
   // ── Public ────────────────────────────────────────────────────────────
@@ -139,8 +145,8 @@ export const api = {
     register: (id: number) => fxsim<{ success: boolean; message?: string; account_id?: number; checkout_required?: boolean; checkout_url?: string }>(`/competitions/${id}/join`, { method: 'POST' }),
   },
   tournaments: {
-    list:     (params?: { status?: string; search?: string }) => fxsim<import('../types/api').Competition[]>('/tournaments', { query: params, public: true, cache: 0 }),
-    get:      (id: number) => fxsim<import('../types/api').Competition>(`/tournaments/${id}`, { public: true, cache: 0 }),
+    list:     (params?: { status?: string; search?: string }) => fxsim<import('../types/api').Competition[]>('/tournaments', { query: params, cache: 0 }),
+    get:      (id: number) => fxsim<import('../types/api').Competition>(`/tournaments/${id}`, { cache: 0 }),
     join:     (id: number) => fxsim<{ success: boolean; message: string; participant_id?: number; tournament_id?: number }>(`/tournaments/${id}/join`, { method: 'POST' }),
     leaderboard: (id: number) => fxsim<{ tournament: import('../types/api').Competition; leaderboard: import('../types/api').LeaderboardRow[] }>(`/tournaments/${id}/leaderboard`, { public: true, cache: 0 }),
   },

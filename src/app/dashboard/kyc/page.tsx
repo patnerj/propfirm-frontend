@@ -296,6 +296,9 @@ export default function KycPage() {
   const { data: kyc, isPending, refetch } = useKycQuery()
   const loading = isPending && !kyc
 
+  const [docType, setDocType] = useState<'national_id' | 'passport' | 'drivers_license'>('national_id')
+  const [country, setCountry] = useState('United States')
+
   const [files, setFiles] = useState<Record<DocKey, File | null>>({
     id_doc: null,
     id_doc_back: null,
@@ -337,6 +340,8 @@ export default function KycPage() {
     if (!allReady) return
     setSubmitting(true)
     const form = new FormData()
+    form.append('doc_type', docType)
+    form.append('country', country)
     form.append('id_doc', files.id_doc!)
     form.append('id_doc_back', files.id_doc_back!)
     form.append('selfie', files.selfie!)
@@ -445,9 +450,8 @@ export default function KycPage() {
                     {/* Received Documents Grid */}
                     <div>
                       {(() => {
-                        const isDocUploaded = (k: string) => {
-                          const val = (kyc as any)?.[`${k}_url`] || (kyc as any)?.[k] || (kyc as any)?.documents?.[k];
-                          return val ? true : true; // In pending review, all 4 submitted docs are in review
+                        const isDocUploaded = (k: DocKey) => {
+                          return !!kyc?.docs?.[k];
                         };
                         const uploadedCount = DOCS.filter(d => isDocUploaded(d.key)).length;
 
@@ -517,6 +521,33 @@ export default function KycPage() {
                 
                 {/* Left Side: 4 Document Upload Slots in 2x2 Grid */}
                 <div className="lg:col-span-7 space-y-4">
+                  
+                  {/* Doc Type & Country Selectors */}
+                  <div className="grid sm:grid-cols-2 gap-3 p-4 rounded-xl border border-[#1F2937] bg-[#111827]">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-300 block mb-1.5">Document Type</label>
+                      <select 
+                        value={docType} 
+                        onChange={(e) => setDocType(e.target.value as any)}
+                        className="w-full h-9 rounded-lg bg-[#0B0F19] border border-[#1F2937] px-3 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="national_id">National ID Card</option>
+                        <option value="passport">Passport</option>
+                        <option value="drivers_license">Driver’s License</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-300 block mb-1.5">Country of Issuance</label>
+                      <input 
+                        type="text" 
+                        value={country} 
+                        onChange={(e) => setCountry(e.target.value)}
+                        placeholder="e.g. United States, United Kingdom"
+                        className="w-full h-9 rounded-lg bg-[#0B0F19] border border-[#1F2937] px-3 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between px-1">
                     <span className="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono">
                       Required Identity Documents (4)

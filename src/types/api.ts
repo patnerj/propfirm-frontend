@@ -111,10 +111,12 @@ export interface HistoryResp {
 export type KycStatus = 'not_started' | 'pending' | 'approved' | 'rejected'
 export interface KycInfo {
   status:        KycStatus
+  doc_type?:     string
+  country?:      string
   admin_note?:   string | null
   submitted_at?: string | null
   reviewed_at?:  string | null
-  docs?: { id_doc: boolean; selfie: boolean; address_doc: boolean }
+  docs?: { id_doc?: boolean; id_doc_back?: boolean; selfie?: boolean; address_doc?: boolean }
 }
 
 // ── Payouts (history + availability) ─────────────────────────────────────────
@@ -408,6 +410,10 @@ export interface Notification {
 export interface NotificationsResp {
   notifications: Notification[]
   unread_count:  number
+  total?:        number
+  has_more?:     boolean
+  page?:         number
+  per_page?:     number
 }
 
 export interface AdminNotification {
