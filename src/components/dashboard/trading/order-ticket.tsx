@@ -30,11 +30,13 @@ interface Props {
   plan?: ChallengePlan | null
   /** Optional active challenge */
   challenge?: any
+  /** Called after position / order changes to trigger unified refresh. */
+  onChanged?: () => void
   /** Called after a successful order so the parent can close a sheet. */
   onSubmitted?: () => void
 }
 
-export const OrderTicket = memo(function OrderTicket({ compact, account, plan, challenge, onSubmitted }: Props) {
+export const OrderTicket = memo(function OrderTicket({ compact, account, plan, challenge, onChanged, onSubmitted }: Props) {
   const active = useTerminal((s) => s.active)
   const meta   = useTerminal((s) => s.getMeta(active))
   const tick   = usePrices((s) => s.prices[active])
@@ -221,9 +223,13 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     if (res.ok && res.data.success) {
       playOrderSuccessSound()
       toast.success(`${side.toUpperCase()} ${lotN} ${active} opened`)
-      refreshUser()
-      invalidateFxsim('/positions')
-      invalidateFxsim('/account')
+      if (onChanged) {
+        onChanged()
+      } else {
+        refreshUser()
+        invalidateFxsim('/positions')
+        invalidateFxsim('/account')
+      }
       setSl(''); setTp('')
       onSubmitted?.()
     } else {
@@ -282,9 +288,14 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     if (res.ok && res.data.success) {
       playOrderSuccessSound()
       toast.success(`${pendingType.replace('_', ' ')} ${lotN} ${active} placed @ ${fmtPrice(targetN, digits)}`)
-      refreshUser()
-      invalidateFxsim('/pending-order')
-      invalidateFxsim('/account')
+      if (onChanged) {
+        onChanged()
+      } else {
+        refreshUser()
+        invalidateFxsim('/pending-order/my')
+        invalidateFxsim('/pending-order')
+        invalidateFxsim('/account')
+      }
       setSl(''); setTp(''); setTarget('')
       onSubmitted?.()
     } else {

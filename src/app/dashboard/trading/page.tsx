@@ -81,12 +81,13 @@ export default function TradingTerminalPage() {
     return () => pricesStop()
   }, [pricesStart, pricesStop])
 
-  // Refresh callback for trade mutations (close, partial close, SL/TP update, cancel)
+  // Refresh callback for trade mutations (close, partial close, SL/TP update, cancel, open, pending)
   const refreshAll = useCallback(async () => {
     invalidateFxsim('/positions')
     invalidateFxsim('/account')
     invalidateFxsim('/history')
-    invalidateFxsim('/pending-orders')
+    invalidateFxsim('/pending-order/my')
+    invalidateFxsim('/pending-order')
     await usePrices.getState().refresh()
   }, [])
 
@@ -542,7 +543,7 @@ function DesktopLayout({
                 </button>
               </div>
               <SectionErrorBoundary>
-                <OrderTicket account={account} plan={plan} />
+                <OrderTicket account={account} plan={plan} onChanged={onChanged} />
               </SectionErrorBoundary>
             </aside>
           )}
@@ -598,21 +599,10 @@ function MobileLayout({
 
   return (
     <div className="flex flex-col gap-2 h-[calc(100dvh-5rem)] -mx-3 -my-3 md:-mx-4 md:-my-4">
-      {/* Account strip — sleek MT5 mobile bar */}
+      {/* Account strip with real-time drawdown telemetry */}
       {account && (
         <div className="px-3 pt-2 shrink-0">
-          <div className="rounded-lg border border-border bg-surface px-3 py-1.5 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-3">
-              <span className="text-text-muted">Eq: <strong className="text-emerald-400 font-semibold">{fmtUSD(toNum(account.equity))}</strong></span>
-              <span className="text-text-muted">Bal: <strong className="text-white">{fmtUSD(toNum(account.balance))}</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted">P&L:</span>
-              <span className={`font-bold ${openPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {fmtUSD(openPnL, { sign: true })}
-              </span>
-            </div>
-          </div>
+          <AccountStrip account={account} openPnL={openPnL} metrics={metrics} compact />
         </div>
       )}
 
@@ -685,7 +675,7 @@ function MobileLayout({
         height={0.92}
       >
         <SectionErrorBoundary>
-          <OrderTicket compact account={account} plan={plan} onSubmitted={() => setSheet(null)} />
+          <OrderTicket compact account={account} plan={plan} onChanged={onChanged} onSubmitted={() => setSheet(null)} />
         </SectionErrorBoundary>
       </MobileBottomSheet>
 

@@ -85,22 +85,38 @@ export default function HistoryPage() {
       toast.error('No trades available to export.')
       return
     }
+
+    const escapeCsvCell = (val: any): string => {
+      if (val === null || val === undefined) return '""'
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        return String(val)
+      }
+      let str = String(val)
+      // CSV / Formula Injection Defense (OWASP):
+      // If a string cell starts with =, +, -, @, \t, or \r, prefix with single quote (')
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str
+      }
+      return `"${str.replace(/"/g, '""')}"`
+    }
+
     const headers = ['ID', 'Symbol', 'Side', 'Lots', 'Open Price', 'Close Price', 'P&L', 'Commission', 'Swap', 'Opened At', 'Closed At', 'Note']
     const rows = filtered.map((t) => [
-      t.id,
-      t.symbol,
-      (t.type || '').toUpperCase(),
-      t.lot_size,
-      t.open_price,
-      t.close_price,
-      t.pnl,
-      t.commission ?? 0,
-      t.swap ?? 0,
-      t.opened_at ?? '',
-      t.closed_at ?? '',
-      `"${(t.note || '').replace(/"/g, '""')}"`
+      escapeCsvCell(t.id),
+      escapeCsvCell(t.symbol),
+      escapeCsvCell((t.type || '').toUpperCase()),
+      escapeCsvCell(toNum(t.lot_size)),
+      escapeCsvCell(toNum(t.open_price)),
+      escapeCsvCell(toNum(t.close_price)),
+      escapeCsvCell(toNum(t.pnl)),
+      escapeCsvCell(toNum(t.commission ?? 0)),
+      escapeCsvCell(toNum(t.swap ?? 0)),
+      escapeCsvCell(t.opened_at ?? ''),
+      escapeCsvCell(t.closed_at ?? ''),
+      escapeCsvCell(t.note ?? '')
     ])
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+
+    const csvContent = [headers.map(escapeCsvCell).join(','), ...rows.map((r) => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
