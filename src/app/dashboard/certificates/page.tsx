@@ -105,7 +105,10 @@ export default function CertificatesPage() {
                 transition={{ duration: 0.4, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
                 className={payoutList.length === 1 ? "w-full max-w-lg" : ""}
               >
-                <PayoutCertCard payout={p} />
+                <PayoutCertCard 
+                  payout={p} 
+                  planName={list?.find(c => c.id === p.challenge_id)?.plan_name || (p as any).plan_name || 'Funded Trader Program'} 
+                />
               </motion.div>
             ))}
           </div>
@@ -150,19 +153,19 @@ function CertificateCard({ cert, challenge }: { cert: Cert | null | undefined; c
   )
 }
 
-function PayoutCertCard({ payout }: { payout: PayoutItem }) {
+function PayoutCertCard({ payout, planName }: { payout: PayoutItem; planName?: string }) {
   const [downloading, setDownloading] = useState(false)
 
   const download = async () => {
     setDownloading(true)
-    try { await downloadPayoutCertificatePdf(payout) }
+    try { await downloadPayoutCertificatePdf(payout, { planName }) }
     catch { toast.error('Could not generate the PDF. Please try again.') }
     finally { setDownloading(false) }
   }
 
   return (
     <Card className="overflow-hidden relative border-success/20">
-      <PayoutCertificateDocument payout={payout} />
+      <PayoutCertificateDocument payout={payout} planName={planName} />
       <div className="px-6 pb-4 -mt-1 flex items-center justify-end gap-1.5">
         <Button variant="ghost" size="sm" onClick={download} loading={downloading} className="text-success hover:text-success hover:bg-success/10">
           <Download className="h-4 w-4" /> Download Payout Certificate

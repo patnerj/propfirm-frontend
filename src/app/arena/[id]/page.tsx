@@ -123,11 +123,27 @@ export default function PvpLiveBattleArenaPage() {
   const secondsLeft = liveState?.seconds_remaining ?? 0
   const leadDelta = liveState?.lead_delta ?? 0
 
-  const handleSendChat = (e: React.FormEvent) => {
+  const [sendingChat, setSendingChat] = useState(false)
+  const spectatorCount = Math.max(3, (match?.creator_trades_count ?? 0) + (match?.challenger_trades_count ?? 0) + 1 + (Number(matchId || 0) % 7))
+
+  const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!chatMessage.trim()) return
-    setLocalEvents(prev => [chatMessage, ...prev])
+    const msg = chatMessage.trim()
+    if (!msg || !matchId) return
     setChatMessage('')
+    try {
+      setSendingChat(true)
+      const res = await api.pvp.chat(matchId, msg)
+      if (res.ok && res.data.success) {
+        refetch()
+      } else {
+        toast.error((!res.ok ? res.error : res.data.message) || 'Failed to broadcast stadium chat.')
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to broadcast stadium chat.')
+    } finally {
+      setSendingChat(false)
+    }
   }
 
   const LOT_BUTTONS = [0.5, 1.0, 2.0, 5.0]
@@ -157,7 +173,7 @@ export default function PvpLiveBattleArenaPage() {
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-gray-400">
             <Radio className="h-3 w-3 text-red-500 animate-ping" />
-            <span>42 Spectators In Stadium</span>
+            <span>{spectatorCount} Spectators In Stadium</span>
           </div>
 
           <Button
@@ -509,24 +525,36 @@ export default function PvpLiveBattleArenaPage() {
                 </div>
               ))}
 
-              {(liveState?.events || []).map((ev) => (
-                <div 
-                  key={ev.id}
-                  className={`p-2.5 rounded-lg border ${
-                    ev.event_type === 'match_settled' 
-                      ? 'bg-amber-950/30 border-amber-500/30 text-amber-300 font-bold'
-                      : ev.event_type === 'battle_started'
-                      ? 'bg-red-950/30 border-red-500/30 text-red-300 font-bold'
-                      : 'bg-slate-900/60 border-slate-800 text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
-                    <span>{ev.event_type}</span>
-                    <span>{ev.created_at}</span>
+              {(liveState?.events || []).map((ev) => {
+                let author = (ev as any).author_name;
+                if (!author && (ev as any).payload) {
+                  try { author = JSON.parse((ev as any).payload)?.author_name; } catch {}
+                }
+                const isChat = ev.event_type === 'chat';
+                const isSettled = ev.event_type === 'match_settled';
+                const isStarted = ev.event_type === 'battle_started';
+
+                return (
+                  <div 
+                    key={ev.id}
+                    className={`p-2.5 rounded-lg border ${
+                      isSettled 
+                        ? 'bg-amber-950/30 border-amber-500/30 text-amber-300 font-bold'
+                        : isStarted
+                        ? 'bg-red-950/30 border-red-500/30 text-red-300 font-bold'
+                        : isChat
+                        ? 'bg-cyan-950/20 border-cyan-500/30 text-cyan-200'
+                        : 'bg-slate-900/60 border-slate-800 text-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+                      <span className="font-semibold text-gray-400">{isChat ? (author || 'Spectator') : ev.event_type}</span>
+                      <span>{ev.created_at}</span>
+                    </div>
+                    <div>{ev.message}</div>
                   </div>
-                  <div>{ev.message}</div>
-                </div>
-              ))}
+                )
+              })}
             </CardContent>
 
             <CardFooter className="p-3 bg-[#0B0F19] border-t border-[#1F2937]">
@@ -537,7 +565,7 @@ export default function PvpLiveBattleArenaPage() {
                   onChange={(e) => setChatMessage(e.target.value)}
                   className="bg-slate-900 border-slate-800 text-xs h-9 font-mono"
                 />
-                <Button type="submit" size="sm" className="bg-red-600 hover:bg-red-700 h-9 px-3">
+                <Button type="submit" size="sm" loading={sendingChat} className="bg-red-600 hover:bg-red-700 h-9 px-3">
                   <Send className="h-3.5 w-3.5" />
                 </Button>
               </form>

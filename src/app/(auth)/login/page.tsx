@@ -89,7 +89,7 @@ function LoginForm() {
     if (!twoFA || code.trim().length < 6) return
     setLoading(true)
     setError(null)
-    const res = await verifyTwoFactor(twoFA.uid, code.trim())
+    const res = await verifyTwoFactor(twoFA.uid, code.trim(), remember)
     setLoading(false)
     if (res.ok) finishLogin()
     else setError(res.error ?? 'Invalid or expired code.')

@@ -49,14 +49,36 @@ export default function HistoryPage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'buy' | 'sell' | 'win' | 'loss'>('all')
   const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [noteText, setNoteText] = useState('')
-  const [tagsList, setTagsList] = useState<string[]>([])
-  const [savingNote, setSavingNote] = useState(false)
+  const [editingNotes, setEditingNotes] = useState<Record<number, { note: string; tags: string[]; screenshot_url?: string }>>({})
+  const [savingTradeId, setSavingTradeId] = useState<number | null>(null)
 
-  const handleSaveNote = async (id: number) => {
-    setSavingNote(true)
-    const res = await api.tradeNotesSave(id, { note: noteText, tags: tagsList, screenshot_url: '' })
-    setSavingNote(false)
+  const getTradeNote = (t: Trade) => {
+    return editingNotes[t.id] ?? {
+      note: t.note || '',
+      tags: t.tags || [],
+      screenshot_url: (t as any).screenshot_url || '',
+    }
+  }
+
+  const updateTradeNote = (id: number, patch: Partial<{ note: string; tags: string[]; screenshot_url: string }>, t: Trade) => {
+    setEditingNotes(prev => ({
+      ...prev,
+      [id]: {
+        ...(prev[id] ?? { note: t.note || '', tags: t.tags || [], screenshot_url: (t as any).screenshot_url || '' }),
+        ...patch,
+      }
+    }))
+  }
+
+  const handleSaveNote = async (t: Trade) => {
+    const current = getTradeNote(t)
+    setSavingTradeId(t.id)
+    const res = await api.tradeNotesSave(t.id, { 
+      note: current.note, 
+      tags: current.tags, 
+      screenshot_url: current.screenshot_url || (t as any).screenshot_url || '' 
+    })
+    setSavingTradeId(null)
     if (res.ok) {
       toast.success('Trade note saved successfully.')
       queryClient.setQueryData(['history', 'infinite'], (oldData: any) => {
@@ -65,7 +87,7 @@ export default function HistoryPage() {
           ...oldData,
           pages: oldData.pages.map((page: any) => ({
             ...page,
-            trades: (page.trades || []).map((tr: Trade) => tr.id === id ? { ...tr, note: noteText, tags: tagsList } : tr)
+            trades: (page.trades || []).map((tr: Trade) => tr.id === t.id ? { ...tr, note: current.note, tags: current.tags, screenshot_url: current.screenshot_url || (t as any).screenshot_url || '' } : tr)
           }))
         }
       })
@@ -271,8 +293,6 @@ export default function HistoryPage() {
                     transition={{ duration: 0.2, delay: Math.min(i * 0.01, 0.3) }}
                     onClick={async () => {
                       if (expandedId !== t.id) {
-                        setNoteText(t.note || '')
-                        setTagsList(t.tags || [])
                         setExpandedId(t.id)
 
                         if (t.note === undefined) {
@@ -285,15 +305,15 @@ export default function HistoryPage() {
                             } catch (e) {
                               newTags = []
                             }
-                            setNoteText(newNote)
-                            setTagsList(newTags)
+                            const newScreenshot = (res.data as any).screenshot_url || ''
+                            updateTradeNote(t.id, { note: newNote, tags: newTags, screenshot_url: newScreenshot }, t)
                             queryClient.setQueryData(['history', 'infinite'], (oldData: any) => {
                               if (!oldData) return oldData
                               return {
                                 ...oldData,
                                 pages: oldData.pages.map((page: any) => ({
                                   ...page,
-                                  trades: (page.trades || []).map((tr: Trade) => tr.id === t.id ? { ...tr, note: newNote, tags: newTags } : tr)
+                                  trades: (page.trades || []).map((tr: Trade) => tr.id === t.id ? { ...tr, note: newNote, tags: newTags, screenshot_url: newScreenshot } : tr)
                                 }))
                               }
                             })
@@ -353,12 +373,15 @@ export default function HistoryPage() {
                                 <Tag className="w-3 h-3" /> Tags
                               </div>
                               <div className="flex gap-2 flex-wrap">
-                                {tagsList.map(tag => (
+                                {getTradeNote(t).tags.map(tag => (
                                   <Badge key={tag} tone="info" className="opacity-80 flex items-center gap-1">
                                     {tag}
                                     <span 
                                       className="cursor-pointer text-text-muted hover:text-text ml-1"
-                                      onClick={(e) => { e.stopPropagation(); setTagsList(tagsList.filter(t => t !== tag)); }}
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        updateTradeNote(t.id, { tags: getTradeNote(t).tags.filter(tg => tg !== tag) }, t); 
+                                      }}
                                     >×</span>
                                   </Badge>
                                 ))}
@@ -371,8 +394,9 @@ export default function HistoryPage() {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
                                       const val = e.currentTarget.value.trim();
-                                      if (val && !tagsList.includes(val)) {
-                                        setTagsList([...tagsList, val]);
+                                      const curTags = getTradeNote(t).tags;
+                                      if (val && !curTags.includes(val)) {
+                                        updateTradeNote(t.id, { tags: [...curTags, val] }, t);
                                       }
                                       e.currentTarget.value = '';
                                     }
@@ -385,21 +409,21 @@ export default function HistoryPage() {
                                 <div className="flex items-center gap-2 text-2xs text-text-muted uppercase tracking-wider">
                                   <MessageSquare className="w-3 h-3" /> Journal Note
                                 </div>
-                                {(noteText !== (t.note || '') || JSON.stringify(tagsList) !== JSON.stringify(t.tags || [])) && (
+                                {(getTradeNote(t).note !== (t.note || '') || JSON.stringify(getTradeNote(t).tags) !== JSON.stringify(t.tags || [])) && (
                                   <Button 
                                     size="sm" 
                                     variant="outline" 
                                     className="h-6 text-xs px-2"
-                                    onClick={(e) => { e.stopPropagation(); handleSaveNote(t.id); }}
-                                    loading={savingNote}
+                                    onClick={(e) => { e.stopPropagation(); handleSaveNote(t); }}
+                                    loading={savingTradeId === t.id}
                                   >
                                     <Save className="w-3 h-3 mr-1" /> Save
                                   </Button>
                                 )}
                               </div>
                               <textarea
-                                value={noteText}
-                                onChange={(e) => setNoteText(e.target.value)}
+                                value={getTradeNote(t).note}
+                                onChange={(e) => updateTradeNote(t.id, { note: e.target.value }, t)}
                                 onClick={(e) => e.stopPropagation()}
                                 placeholder="Write down your thoughts, emotions, or screenshots link for this trade..."
                                 className="w-full bg-bg-subtle/30 border border-border-subtle rounded-md p-2 text-xs text-text min-h-[60px] focus:outline-none focus:ring-1 focus:ring-accent/50"

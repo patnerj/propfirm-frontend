@@ -30,7 +30,12 @@ export default function PublicTournamentArena() {
         api.tournaments.leaderboard(id)
       ])
       
-      if (tRes.ok) setTournament(tRes.data)
+      if (tRes.ok) {
+        setTournament(tRes.data)
+        if ((tRes.data as any)?.is_registered || (tRes.data as any)?.is_joined) {
+          setRegistered(true)
+        }
+      }
       if (lRes.ok) {
         const lbData = lRes.data
         if (Array.isArray(lbData)) {
@@ -76,6 +81,9 @@ export default function PublicTournamentArena() {
   )
 
   const isActive = tournament.status === 'active'
+  const isCancelled = tournament.status === 'cancelled'
+  const isCompleted = tournament.status === 'completed'
+  const entryFee = Number(tournament.entry_fee) || 0
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -104,6 +112,7 @@ export default function PublicTournamentArena() {
                 <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
                   isActive ? 'bg-accent/20 text-accent border border-accent/30' : 
                   tournament.status === 'upcoming' ? 'bg-info/20 text-info border border-info/30' : 
+                  isCancelled ? 'bg-destructive/20 text-destructive border border-destructive/30' :
                   'bg-surface-muted text-text-muted border border-border'
                 }`}>
                   {isActive && <span className="h-2 w-2 rounded-full bg-accent mr-2 animate-pulse"></span>}
@@ -122,19 +131,25 @@ export default function PublicTournamentArena() {
               </p>
             </div>
 
-            <div className="shrink-0 flex flex-col gap-4">
-              <div className="bg-surface-muted/80 backdrop-blur-md border border-border/50 rounded-2xl p-6 shadow-xl">
-                <div className="text-sm font-medium text-text-muted mb-1 text-center">Total Prize Pool</div>
-                <div className="text-3xl font-black text-accent text-center drop-shadow-sm">{tournament.prize_pool}</div>
+            <div className="shrink-0 flex flex-col gap-4 min-w-[280px]">
+              <div className="bg-surface-muted/80 backdrop-blur-md border border-border/50 rounded-2xl p-6 shadow-xl space-y-3">
+                <div>
+                  <div className="text-xs font-medium text-text-muted mb-0.5 text-center uppercase tracking-wider">Total Prize Pool</div>
+                  <div className="text-3xl font-black text-accent text-center drop-shadow-sm">{tournament.prize_pool}</div>
+                </div>
+                <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-text-muted px-1">
+                  <span>Entry Requirement:</span>
+                  <span className="font-bold text-text font-mono">{entryFee > 0 ? `$${entryFee.toFixed(2)}` : 'Free Entry'}</span>
+                </div>
               </div>
 
-              {!registered && tournament.status !== 'completed' && (
+              {!registered && !isCancelled && !isCompleted && (
                 <button 
                   onClick={handleRegister}
                   disabled={registering}
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-4 rounded-xl shadow-lg shadow-accent/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex items-center justify-center gap-2 text-lg"
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-4 rounded-xl shadow-lg shadow-accent/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex items-center justify-center gap-2 text-base"
                 >
-                  {registering ? 'Registering...' : 'Enter Tournament'}
+                  {registering ? 'Registering...' : `Enter Tournament (${entryFee > 0 ? `$${entryFee.toFixed(2)}` : 'Free'})`}
                   <ArrowRight className="h-5 w-5" />
                 </button>
               )}
@@ -142,6 +157,16 @@ export default function PublicTournamentArena() {
                 <div className="w-full bg-success/20 border border-success/30 text-success font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2">
                   <span className="h-2 w-2 bg-success rounded-full animate-pulse"></span>
                   You are registered
+                </div>
+              )}
+              {isCancelled && (
+                <div className="w-full bg-destructive/20 border border-destructive/30 text-destructive font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2">
+                  Tournament Cancelled
+                </div>
+              )}
+              {isCompleted && !registered && (
+                <div className="w-full bg-surface-muted border border-border text-text-muted font-bold py-4 rounded-xl text-center flex items-center justify-center gap-2">
+                  Tournament Concluded
                 </div>
               )}
             </div>

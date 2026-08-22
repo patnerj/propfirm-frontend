@@ -46,8 +46,8 @@ export const api = {
   auth: {
     login:    (body: { username: string; password: string; remember?: boolean }) =>
       fxsim<{ user?: AuthUser; nonce?: string; two_factor_required?: boolean; uid?: number }>('/auth/login', { body, public: true }),
-    verify2fa: (uid: number, code: string) =>
-      fxsim<{ user: AuthUser; nonce: string }>('/auth/2fa/verify', { body: { uid, code }, public: true }),
+    verify2fa: (uid: number, code: string, remember?: boolean) =>
+      fxsim<{ user: AuthUser; nonce: string }>('/auth/2fa/verify', { body: { uid, code, remember: !!remember }, public: true }),
     register: (body: { username: string; email: string; password: string; ref?: string }) =>
       fxsim<{ user: AuthUser; nonce: string }>('/auth/register', { body, public: true }),
     logout:   () => fxsim<{ success: true }>('/auth/logout', { method: 'POST' }),
@@ -167,7 +167,7 @@ export const api = {
   affiliatePayouts: () => fxsim<AffiliatePayout[]>('/affiliate/payouts', { cache: 5_000 }),
 
   // ── Notifications ─────────────────────────────────────────────────────
-  notifications:    ()           => fxsim<NotificationsResp>('/notifications', { cache: 10_000 }),
+  notifications:    (page = 1, per_page = 30) => fxsim<NotificationsResp>(`/notifications?page=${page}&per_page=${per_page}`, { cache: 10_000 }),
   notificationsRead: (ids?: number[]) =>
     fxsim<{ success: true }>('/notifications/read', { body: { ids: ids ?? [] } }),
 
@@ -502,5 +502,7 @@ export const api = {
       fxsim<{ success: boolean; winner_id: number; prize_pool: number; rake: number; message: string }>(`/pvp/match/${id}/settle`, { body: {} }),
     cancel: (id: number) =>
       fxsim<{ success: boolean; message?: string; error?: string }>(`/pvp/match/${id}/cancel`, { body: {} }),
+    chat: (id: number, message: string) =>
+      fxsim<{ success: boolean; message: string }>(`/pvp/match/${id}/chat`, { body: { message } }),
   },
 }

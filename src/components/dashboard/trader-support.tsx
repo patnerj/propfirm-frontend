@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Ticket, TicketMessage } from "@/types/api";
 import { LifeBuoy } from "lucide-react";
+import { toast } from "sonner";
 
 export function TraderSupport() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -43,6 +44,7 @@ export function TraderSupport() {
     refetchInterval: 5000,
   });
   const messages = activeTicketData?.messages ?? [];
+  const currentTicket = (activeTicketData as any)?.ticket || selectedTicket;
 
   const handleSelectTicket = async (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -53,17 +55,22 @@ export function TraderSupport() {
     if (!newSubject.trim() || !newMessage.trim()) return;
     setLoading(true);
     try {
-      await api.tickets.create({
+      const res = await api.tickets.create({
         subject: newSubject,
         category: newCategory,
         message: newMessage,
       });
-      setIsCreating(false);
-      setNewSubject("");
-      setNewMessage("");
-      await refetchTickets();
-    } catch (err) {
-      console.error(err);
+      if (res.ok && (res.data as any)?.success !== false) {
+        toast.success("Support ticket opened successfully!");
+        setIsCreating(false);
+        setNewSubject("");
+        setNewMessage("");
+        await refetchTickets();
+      } else {
+        toast.error(res.ok ? ((res.data as any)?.message || "Failed to create ticket") : (res.error || "Failed to create ticket"));
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create support ticket.");
     } finally {
       setLoading(false);
     }
@@ -73,11 +80,17 @@ export function TraderSupport() {
     if (!selectedTicket || !replyText.trim()) return;
     setLoading(true);
     try {
-      await api.tickets.reply(Number(selectedTicket.id), replyText);
-      setReplyText("");
-      await refetchMessages();
-    } catch (err) {
-      console.error(err);
+      const res = await api.tickets.reply(Number(selectedTicket.id), replyText);
+      if (res.ok && (res.data as any)?.success !== false) {
+        toast.success("Reply sent.");
+        setReplyText("");
+        await refetchMessages();
+        await refetchTickets();
+      } else {
+        toast.error(res.ok ? ((res.data as any)?.message || "Failed to send reply") : (res.error || "Failed to send reply"));
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send reply.");
     } finally {
       setLoading(false);
     }
@@ -119,10 +132,11 @@ export function TraderSupport() {
               onChange={(e) => setNewCategory(e.target.value)}
               className="w-full rounded-md border p-2 bg-bg border-border text-text"
             >
-              <option value="general">General Support</option>
+              <option value="general">General Inquiry</option>
               <option value="billing">Billing & Payouts</option>
-              <option value="technical">Technical Issue</option>
-              <option value="dispute">Trade Dispute</option>
+              <option value="rules">Rules & Evaluation Dispute</option>
+              <option value="tech_mt5">Technical & Platform Issue</option>
+              <option value="kyc">KYC & Verification</option>
             </select>
           </div>
           <div>
@@ -161,8 +175,8 @@ export function TraderSupport() {
                   <span className="text-text-muted">{new Date(selectedTicket.created_at).toLocaleString()}</span>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${statusColors[selectedTicket.status]}`}>
-                {selectedTicket.status}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${statusColors[currentTicket?.status || selectedTicket.status] || 'bg-surface-hover text-text-muted'}`}>
+                {currentTicket?.status || selectedTicket.status}
               </span>
             </div>
           </div>
@@ -181,7 +195,7 @@ export function TraderSupport() {
             })}
           </div>
 
-          {selectedTicket.status !== 'closed' ? (
+          {(currentTicket?.status || selectedTicket.status) !== 'closed' ? (
             <div className="border-t border-border pt-4 flex gap-3">
               <textarea
                 className="flex-1 rounded-md border p-3 bg-bg border-border text-text placeholder:text-text-muted min-h-[80px]"

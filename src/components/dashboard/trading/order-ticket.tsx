@@ -81,7 +81,7 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     })
   }, [plan, newsEvents, active])
 
-  const isIpRestricted = false
+  const isIpRestricted = !!((plan as any)?.ip_match_required && ((account as any)?.ip_restricted || (account as any)?.is_ip_restricted))
 
   const digits = meta?.digits || symbolDigits(active)
   const minLot = toNum(meta?.min_lot)  || 0.01

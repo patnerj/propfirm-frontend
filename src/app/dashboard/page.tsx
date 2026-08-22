@@ -335,9 +335,14 @@ function ResendVerifyButton() {
       disabled={sending || sent}
       onClick={async () => {
         setSending(true)
-        await api.auth.resendVerification()
-        setSent(true)
+        const res = await api.auth.resendVerification()
         setSending(false)
+        if (res.ok && (res.data as any)?.success !== false) {
+          setSent(true)
+          toast.success((res.data as any)?.message || 'Verification email sent! Check your inbox.')
+        } else {
+          toast.error(res.ok ? ((res.data as any)?.message || 'Failed to send verification email.') : (res.error || 'Failed to send verification email.'))
+        }
       }}
       className="text-accent hover:underline disabled:opacity-60 disabled:no-underline ml-0.5 font-medium"
     >

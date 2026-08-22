@@ -15,7 +15,7 @@ interface AuthState {
 
   bootstrap: () => Promise<void>
   signin:    (username: string, password: string, remember?: boolean) => Promise<{ ok: boolean; error?: string; twoFactor?: boolean; uid?: number }>
-  verifyTwoFactor: (uid: number, code: string) => Promise<{ ok: boolean; error?: string }>
+  verifyTwoFactor: (uid: number, code: string, remember?: boolean) => Promise<{ ok: boolean; error?: string }>
   signup:    (username: string, email: string, password: string, ref?: string) => Promise<{ ok: boolean; error?: string }>
   signout:   () => Promise<void>
   logout:    () => Promise<void>
@@ -75,9 +75,9 @@ export const useAuth = create<AuthState>((set, get) => ({
     return { ok: false, error: res.ok ? 'Login failed' : res.error }
   },
 
-  verifyTwoFactor: async (uid: number, code: string) => {
+  verifyTwoFactor: async (uid: number, code: string, remember?: boolean) => {
     set({ loading: true, error: null })
-    const res = await api.auth.verify2fa(uid, code)
+    const res = await api.auth.verify2fa(uid, code, remember)
     if (res.ok) {
       const token = (res.data as any)?.token || res.data?.nonce
       setSession({ nonce: res.data.nonce, bearer: token })

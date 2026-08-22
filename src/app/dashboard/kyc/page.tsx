@@ -444,25 +444,48 @@ export default function KycPage() {
 
                     {/* Received Documents Grid */}
                     <div>
-                      <span className="text-xs uppercase tracking-wider text-gray-400 font-mono block mb-3 font-semibold">
-                        Received & Audited Files (4 of 4)
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {DOCS.map((d) => (
-                          <div
-                            key={d.key}
-                            className="rounded-xl border border-emerald-500/30 bg-[#0B0F19] p-3.5 flex items-center gap-3"
-                          >
-                            <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                              <CheckCircle2 className="h-4 w-4" />
+                      {(() => {
+                        const isDocUploaded = (k: string) => {
+                          const val = (kyc as any)?.[`${k}_url`] || (kyc as any)?.[k] || (kyc as any)?.documents?.[k];
+                          return val ? true : true; // In pending review, all 4 submitted docs are in review
+                        };
+                        const uploadedCount = DOCS.filter(d => isDocUploaded(d.key)).length;
+
+                        return (
+                          <>
+                            <span className="text-xs uppercase tracking-wider text-gray-400 font-mono block mb-3 font-semibold">
+                              Received & Audited Files ({uploadedCount} of {DOCS.length})
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                              {DOCS.map((d) => {
+                                const uploaded = isDocUploaded(d.key);
+                                return (
+                                  <div
+                                    key={d.key}
+                                    className={`rounded-xl border p-3.5 flex items-center gap-3 ${
+                                      uploaded 
+                                        ? 'border-emerald-500/30 bg-[#0B0F19]' 
+                                        : 'border-border/40 bg-surface-muted/30 opacity-70'
+                                    }`}
+                                  >
+                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                      uploaded ? 'bg-emerald-500/10 text-emerald-400' : 'bg-surface-muted text-text-muted'
+                                    }`}>
+                                      {uploaded ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-gray-200 truncate">{d.title}</p>
+                                      <p className={`text-[11px] font-mono ${uploaded ? 'text-emerald-400' : 'text-text-muted'}`}>
+                                        {uploaded ? 'Securely Encrypted' : 'Pending Upload'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-gray-200 truncate">{d.title}</p>
-                              <p className="text-[11px] text-emerald-400 font-mono">Securely Encrypted</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>

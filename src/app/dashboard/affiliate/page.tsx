@@ -21,6 +21,93 @@ const payoutTone = (s: AffiliatePayout['status']) =>
   s === 'paid' ? 'success' : s === 'rejected' ? 'danger' : s === 'approved' ? 'info' : 'warn'
 const METHOD_LABEL: Record<string, string> = { usdt_trc20: 'USDT (TRC20)', usdt_bep20: 'USDT (BEP20)', wise: 'Wise' }
 
+function downloadBanner(type: '16:9' | '1:1', code: string, refLink: string) {
+  if (typeof window === 'undefined') return
+  const canvas = document.createElement('canvas')
+  const width = type === '16:9' ? 1920 : 1080
+  const height = 1080
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  // Dark background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, width, height)
+  bgGrad.addColorStop(0, '#06080F')
+  bgGrad.addColorStop(0.5, '#0B0F19')
+  bgGrad.addColorStop(1, '#0F172A')
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, width, height)
+
+  // Glow
+  const glowGrad = ctx.createRadialGradient(width / 2, height / 3, 50, width / 2, height / 3, 500)
+  glowGrad.addColorStop(0, 'rgba(59, 130, 246, 0.25)')
+  glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+  ctx.fillStyle = glowGrad
+  ctx.fillRect(0, 0, width, height)
+
+  // Border frame
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
+  ctx.lineWidth = 4
+  ctx.strokeRect(40, 40, width - 80, height - 80)
+
+  // Brand Name
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#3B82F6'
+  ctx.font = 'bold 36px monospace'
+  ctx.fillText('NEXT-GEN PROPFIRM', width / 2, type === '16:9' ? 240 : 280)
+
+  // Heading
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = '900 64px system-ui, -apple-system, sans-serif'
+  ctx.fillText('TRADE CAPITAL UP TO $200,000', width / 2, type === '16:9' ? 360 : 420)
+
+  // Subtitle
+  ctx.fillStyle = '#94A3B8'
+  ctx.font = '500 32px system-ui, -apple-system, sans-serif'
+  ctx.fillText('Keep up to 90% profit split • Instant Payouts • Low Spreads', width / 2, type === '16:9' ? 450 : 520)
+
+  // Pill
+  const pillW = 560
+  const pillH = 120
+  const pillX = (width - pillW) / 2
+  const pillY = type === '16:9' ? 560 : 660
+
+  ctx.fillStyle = 'rgba(59, 130, 246, 0.15)'
+  ctx.strokeStyle = '#3B82F6'
+  ctx.lineWidth = 3
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath()
+    ctx.roundRect(pillX, pillY, pillW, pillH, 20)
+    ctx.fill()
+    ctx.stroke()
+  } else {
+    ctx.fillRect(pillX, pillY, pillW, pillH)
+    ctx.strokeRect(pillX, pillY, pillW, pillH)
+  }
+
+  ctx.fillStyle = '#93C5FD'
+  ctx.font = 'bold 22px monospace'
+  ctx.fillText('USE REFERRAL CODE', width / 2, pillY + 45)
+
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = '900 40px monospace'
+  ctx.fillText((code || 'PROPFIRM').toUpperCase(), width / 2, pillY + 95)
+
+  // Footer Link
+  ctx.fillStyle = '#64748B'
+  ctx.font = '500 24px system-ui, -apple-system, sans-serif'
+  ctx.fillText(refLink || 'launchapropfirm.com', width / 2, type === '16:9' ? 950 : 980)
+
+  // Trigger download
+  const dataUrl = canvas.toDataURL('image/png')
+  const a = document.createElement('a')
+  a.href = dataUrl
+  a.download = `propfirm-banner-${type === '16:9' ? '16x9' : '1x1'}-${code || 'partner'}.png`
+  a.click()
+  toast.success('Marketing asset PNG downloaded!')
+}
+
 export default function AffiliatePage() {
   const { data, refetch: load, isPending } = useQuery({
     queryKey: ['affiliateData'],
@@ -237,26 +324,36 @@ export default function AffiliatePage() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="rounded-lg border border-border-subtle p-3 flex flex-col gap-3">
               <div className="aspect-video bg-surface-muted rounded border border-border flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-bg flex items-center justify-center">
-                  <span className="font-bold text-xl opacity-50 tracking-widest text-text">PROP FIRM</span>
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-bg flex flex-col items-center justify-center p-4 text-center">
+                  <span className="font-mono text-xs uppercase tracking-widest text-accent mb-1 font-bold">16:9 Promo Banner</span>
+                  <span className="font-black text-lg tracking-tight text-text">TRADE UP TO $200K</span>
+                  <span className="text-2xs text-text-muted font-mono mt-1">Code: {me?.code}</span>
                 </div>
                 <div className="absolute inset-0 bg-bg/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button variant="outline" size="sm">Download PNG</Button>
+                  <Button variant="outline" size="sm" onClick={() => downloadBanner('16:9', me?.code || '', link || '')}>Download PNG</Button>
                 </div>
               </div>
-              <div className="text-xs font-medium text-text">16:9 Youtube / Twitter Banner</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-medium text-text">16:9 Youtube / Twitter Banner</div>
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-accent" onClick={() => downloadBanner('16:9', me?.code || '', link || '')}>Download</Button>
+              </div>
             </div>
             
             <div className="rounded-lg border border-border-subtle p-3 flex flex-col gap-3">
               <div className="aspect-square bg-surface-muted rounded border border-border flex items-center justify-center relative overflow-hidden group">
-                 <div className="absolute inset-0 bg-gradient-to-tr from-info/20 to-bg flex items-center justify-center">
-                  <span className="font-bold text-lg opacity-50 tracking-widest text-text">IG POST</span>
+                <div className="absolute inset-0 bg-gradient-to-tr from-info/20 to-bg flex flex-col items-center justify-center p-4 text-center">
+                  <span className="font-mono text-xs uppercase tracking-widest text-info mb-1 font-bold">1:1 Square Post</span>
+                  <span className="font-black text-base tracking-tight text-text">KEEP 90% PROFITS</span>
+                  <span className="text-2xs text-text-muted font-mono mt-1">Code: {me?.code}</span>
                 </div>
                 <div className="absolute inset-0 bg-bg/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button variant="outline" size="sm">Download PNG</Button>
+                  <Button variant="outline" size="sm" onClick={() => downloadBanner('1:1', me?.code || '', link || '')}>Download PNG</Button>
                 </div>
               </div>
-              <div className="text-xs font-medium text-text">1:1 Instagram / Feed Post</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-medium text-text">1:1 Instagram / Feed Post</div>
+                <Button variant="ghost" size="sm" className="h-7 text-xs text-info" onClick={() => downloadBanner('1:1', me?.code || '', link || '')}>Download</Button>
+              </div>
             </div>
           </div>
         </CardContent>
