@@ -334,14 +334,21 @@ export default function KycPage() {
   }
 
   const uploadedCount = Object.values(files).filter(Boolean).length
-  const allReady = !!(files.id_doc && files.id_doc_back && files.selfie && files.address_doc)
+  const allReady = !!(files.id_doc && files.id_doc_back && files.selfie && files.address_doc) && country.trim().length > 0
 
   const submit = async () => {
-    if (!allReady) return
+    if (!country.trim()) {
+      toast.error('Please enter the country of issuance for your identity document.')
+      return
+    }
+    if (!allReady) {
+      toast.error('Please select all 4 required identity documents.')
+      return
+    }
     setSubmitting(true)
     const form = new FormData()
     form.append('doc_type', docType)
-    form.append('country', country)
+    form.append('country', country.trim())
     form.append('id_doc', files.id_doc!)
     form.append('id_doc_back', files.id_doc_back!)
     form.append('selfie', files.selfie!)
@@ -537,12 +544,15 @@ export default function KycPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-300 block mb-1.5">Country of Issuance</label>
+                      <label className="text-xs font-semibold text-gray-300 block mb-1.5">
+                        Country of Issuance <span className="text-rose-400">*</span>
+                      </label>
                       <input 
                         type="text" 
                         value={country} 
                         onChange={(e) => setCountry(e.target.value)}
                         placeholder="e.g. United States, United Kingdom"
+                        required
                         className="w-full h-9 rounded-lg bg-[#0B0F19] border border-[#1F2937] px-3 text-xs text-white focus:outline-none focus:border-cyan-500"
                       />
                     </div>
