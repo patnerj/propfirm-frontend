@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion'
 import { Users, DollarSign, Award, Clock } from 'lucide-react'
+import { NumberTicker } from '@/components/ui/number-ticker'
 
 const STATS = [
-  { icon: DollarSign, value: '$48M+',  label: 'Profits paid out',        tone: 'text-success' },
-  { icon: Users,      value: '12.4K+', label: 'Funded traders',          tone: 'text-accent'  },
-  { icon: Award,      value: '94%',    label: 'On-time payout rate',     tone: 'text-info'    },
-  { icon: Clock,      value: '24h',    label: 'Avg. payout processing',  tone: 'text-warn'    },
+  { icon: DollarSign, value: 48,    decimals: 0, suffix: 'M+', label: 'Profits paid out',       tone: 'text-success' },
+  { icon: Users,      value: 12.4,  decimals: 1, suffix: 'K+', label: 'Funded traders',          tone: 'text-accent'  },
+  { icon: Award,      value: 94,    decimals: 0, suffix: '%',  label: 'On-time payout rate',     tone: 'text-info'    },
+  { icon: Clock,      value: 24,    decimals: 0, suffix: 'h',  label: 'Avg. payout processing',  tone: 'text-warn'    },
 ]
 
 export function LiveStatsStrip() {
@@ -24,14 +25,17 @@ export function LiveStatsStrip() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-50px' }}
                 transition={{ duration: 0.5, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                className="px-6 py-4"
+                className="group px-6 py-4 lift rounded-lg"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-lg bg-surface-muted flex items-center justify-center transition-colors group-hover:bg-accent/10">
                     <Icon className={`h-4 w-4 ${stat.tone}`} />
                   </div>
                   <div>
-                    <div className="text-2xl font-semibold tracking-tight">{stat.value}</div>
+                    <div className="text-2xl font-semibold tracking-tight tabular">
+                      <NumberTicker value={stat.value} decimals={stat.decimals} />
+                      <span className={stat.tone}>{stat.suffix}</span>
+                    </div>
                     <div className="text-xs text-text-muted">{stat.label}</div>
                   </div>
                 </div>

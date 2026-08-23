@@ -25,7 +25,7 @@ export function PlatformFeatures({ puckProps }: { puckProps?: any }) {
       <div className="container">
         <div className="max-w-2xl mx-auto text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            {titleText1} <span className="text-accent">{titleAccent}</span>
+            {titleText1} <span className="text-gradient">{titleAccent}</span>
           </h2>
           <p className="mt-4 text-text-muted text-lg">
             {description}

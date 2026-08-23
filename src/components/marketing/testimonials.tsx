@@ -41,7 +41,7 @@ export function Testimonials({ puckProps }: { puckProps?: any }) {
         <div className="max-w-2xl mx-auto text-center mb-16">
           <Badge tone="accent" className="mb-4">{badge}</Badge>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            {titleText1} <span className="text-accent">{titleAccent}</span>
+            {titleText1} <span className="text-gradient">{titleAccent}</span>
           </h2>
         </div>
 

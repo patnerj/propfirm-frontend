@@ -18,6 +18,7 @@ export function Hero({ puckProps }: { puckProps?: { title: string, highlight: st
       {/* atmospheric background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-aurora" />
+        <div className="absolute inset-0 beam-top" />
         <div className="absolute inset-0 bg-grid-overlay opacity-50" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-accent/10 blur-3xl" />
       </div>
@@ -60,7 +61,7 @@ export function Hero({ puckProps }: { puckProps?: { title: string, highlight: st
             transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button asChild size="xl" className="bg-gradient-to-r from-accent to-success hover:from-accent-hover hover:to-success-hover text-white shadow-glow hover:shadow-glow-success transition-all duration-300 group">
+            <Button asChild size="xl" className="bg-gradient-to-r from-accent to-success hover:from-accent-hover hover:to-success-hover text-white shadow-glow hover:shadow-glow-success transition-all duration-300 group btn-shine">
               <Link href="/challenges">
                 Start the challenge
                 <ArrowRight className="h-4 w-4 ml-1.5 group-hover:translate-x-1 transition-transform" />

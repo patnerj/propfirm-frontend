@@ -302,6 +302,16 @@
     box-shadow: 0 8px 24px -6px HSL(var(--accent) / 0.5);
   }
 
+  /* Top-center light beam for hero sections */
+  .beam-top {
+    background: radial-gradient(720px 260px at 50% 0%, HSL(var(--accent) / 0.14), transparent 70%);
+  }
+
+  /* Gradient connector line between process steps */
+  .step-line {
+    background: linear-gradient(90deg, transparent, HSL(var(--accent) / 0.45), transparent);
+  }
+
   /* Accessibility: respect reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

@@ -41,52 +41,56 @@ export function HowItWorks({ puckProps }: { puckProps?: any }) {
         <div className="max-w-2xl mx-auto text-center mb-16">
           <Badge tone="accent" className="mb-4">{badge}</Badge>
           <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            {titleText1} <span className="text-accent">{titleAccent}</span>
+            {titleText1} <span className="text-gradient">{titleAccent}</span>
           </h2>
           <p className="mt-4 text-text-muted text-lg">
             {description}
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {steps.map((step: any, i: number) => {
-            // Support both standard lucide icons if passed directly (fallback), or default if missing
-            const Icon = step.icon || Rocket;
-            return (
-              <motion.div
-                key={step.n}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-80px' }}
-                transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                className="relative group"
-              >
-                <div className="relative h-full p-6 rounded-xl bg-surface border border-border lift overflow-hidden">
-                  {/* big background number */}
-                  <div className="absolute -top-2 -right-2 text-7xl font-bold tracking-tighter text-surface-strong/40 select-none">
-                    {step.n}
-                  </div>
-
-                  <div className="relative">
-                    <div className="h-11 w-11 rounded-lg bg-accent-muted text-accent flex items-center justify-center mb-5">
-                      <Icon className="h-5 w-5" />
+        <div className="relative">
+          {/* gradient connector across step cards (desktop) */}
+          <div className="hidden lg:block absolute top-[52px] left-[16%] right-[16%] h-px step-line pointer-events-none" />
+          <div className="grid lg:grid-cols-3 gap-6">
+            {steps.map((step: any, i: number) => {
+              // Support both standard lucide icons if passed directly (fallback), or default if missing
+              const Icon = step.icon || Rocket;
+              return (
+                <motion.div
+                  key={step.n}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-80px' }}
+                  transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative group"
+                >
+                  <div className="relative h-full p-6 rounded-xl bg-surface border border-border lift card-glow overflow-hidden">
+                    {/* big background number */}
+                    <div className="absolute -top-2 -right-2 text-7xl font-bold tracking-tighter select-none opacity-[0.08] text-gradient">
+                      {step.n}
                     </div>
-                    <h3 className="text-xl font-semibold tracking-tight">{step.title}</h3>
-                    <p className="mt-2 text-sm text-text-muted leading-relaxed">{step.body}</p>
 
-                    <ul className="mt-5 space-y-2">
-                      {step.items && step.items.map((it: any, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                          <span className="text-text-muted">{it.itemText || it}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="relative">
+                      <div className="relative h-11 w-11 rounded-lg bg-accent-muted text-accent flex items-center justify-center mb-5 ring-1 ring-accent/20 z-10">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-xl font-semibold tracking-tight">{step.title}</h3>
+                      <p className="mt-2 text-sm text-text-muted leading-relaxed">{step.body}</p>
+
+                      <ul className="mt-5 space-y-2">
+                        {step.items && step.items.map((it: any, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                            <span className="text-text-muted">{it.itemText || it}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )
-          })}
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </section>

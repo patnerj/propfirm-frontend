@@ -105,9 +105,17 @@ export function ChallengesPreview({ onSelectPlan, puckProps }: { onSelectPlan?: 
   return (
     <section className="relative py-20 bg-bg text-text" id="challenges">
       <div className="container max-w-6xl">
-        <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-8">
-          {title}
-        </h2>
+        <div className="max-w-2xl mx-auto text-center mb-10">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/30 text-xs font-medium text-accent mb-4">
+            Account models
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
+            {title}
+          </h2>
+          <p className="mt-4 text-text-muted text-lg">
+            Pick a model, pick a size, see every rule up front — no fine print.
+          </p>
+        </div>
 
         {error && (
           <div className="text-center py-12 text-sm text-text-muted">
@@ -198,7 +206,7 @@ export function ChallengesPreview({ onSelectPlan, puckProps }: { onSelectPlan?: 
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="mt-6 bg-surface/40 border border-border-subtle rounded-2xl p-6 lg:p-8 flex flex-col lg:flex-row gap-8 lg:gap-12"
+                  className="mt-6 bg-surface/40 border border-border-subtle rounded-2xl p-6 lg:p-8 flex flex-col lg:flex-row gap-8 lg:gap-12 card-glow"
                 >
                   <div className="flex-1 grid md:grid-cols-2 gap-8">
                     <div className="bg-bg/40 rounded-xl p-5 border border-border-subtle/50">

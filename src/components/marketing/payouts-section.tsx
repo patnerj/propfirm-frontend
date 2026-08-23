@@ -30,7 +30,7 @@ export function PayoutsSection({ puckProps }: { puckProps?: any }) {
           >
             <Badge tone="accent" className="mb-4">{badge}</Badge>
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              {titleText1} <span className="text-accent">{titleAccent}</span>
+              {titleText1} <span className="text-gradient">{titleAccent}</span>
             </h2>
             <p className="mt-4 text-text-muted text-lg">
               {description}
