@@ -32,8 +32,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!ready || !user || !user.is_admin || impersonating) {
     return (
       <TradingScreenLoader
-        label="Authenticating Enterprise Admin"
-        subtitle="Verifying cryptographic session & access permissions..."
+        label="Checking your session"
+        subtitle="Verifying access permissions..."
       />
     )
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/store/auth'
+import { useImpersonation } from '@/store/impersonation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { ImpersonationBanner } from '@/components/dashboard/impersonation-banner'
@@ -14,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const user      = useAuth((s) => s.user)
   const ready     = useAuth((s) => s.ready)
   const bootstrap = useAuth((s) => s.bootstrap)
+  const impersonating = useImpersonation((s) => s.record)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -60,6 +62,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [ready, user, pathname])
 
+  // Role routing: admins land on /admin, never on the trader overview.
+  // Runs as early as possible; the render block below holds the paint while
+  // the redirect resolves so the wrong dashboard never flashes.
+  const adminOnTraderOverview = ready && !!user?.is_admin && !impersonating && pathname === '/dashboard'
+  useEffect(() => {
+    if (adminOnTraderOverview) router.replace('/admin')
+  }, [adminOnTraderOverview, router])
+
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false) }, [pathname])
 
@@ -67,8 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // padding) like TradingView / cTrader; other dashboard pages stay readable.
   const isTerminal = !!pathname?.startsWith('/dashboard/trading')
 
-  if (!ready) return <DashboardSkeleton />
-  if (!user)  return <DashboardSkeleton />  // brief blank while redirect runs
+  if (!ready || !user || adminOnTraderOverview) return <DashboardSkeleton />
 
   return (
     <div className="min-h-screen bg-bg">
