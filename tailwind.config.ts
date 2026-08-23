@@ -1,6 +1,60 @@
 import type { Config } from 'tailwindcss'
 import animate from 'tailwindcss-animate'
 
+// ── Legacy color bridge ─────────────────────────────────────────────────
+// Admin/legacy pages were built with stock Tailwind palette colors. Remap
+// every stock shade onto the dynamic theme tokens so admin branding config
+// (accent/warn/danger/info) drives the ENTIRE site — no per-file rewrites.
+const t = {
+  text:    'hsl(var(--text) / <alpha-value>)',
+  muted:   'hsl(var(--text-muted) / <alpha-value>)',
+  subtle:  'hsl(var(--text-subtle) / <alpha-value>)',
+  surface: 'hsl(var(--surface) / <alpha-value>)',
+  surfaceMuted: 'hsl(var(--surface-muted) / <alpha-value>)',
+  surfaceStrong: 'hsl(var(--surface-strong) / <alpha-value>)',
+  bg:      'hsl(var(--bg) / <alpha-value>)',
+  border:  'hsl(var(--border) / <alpha-value>)',
+  accent:  'hsl(var(--accent) / <alpha-value>)',
+  accentTint: 'hsl(var(--accent) / 0.12)',
+  warn:    'hsl(var(--warn) / <alpha-value>)',
+  warnTint: 'hsl(var(--warn) / 0.12)',
+  danger:  'hsl(var(--danger) / <alpha-value>)',
+  dangerTint: 'hsl(var(--danger) / 0.12)',
+  info:    'hsl(var(--info) / <alpha-value>)',
+  infoTint: 'hsl(var(--info) / 0.12)',
+}
+
+const grayFamily = (bright: string, dim: string, faint: string) => ({
+  50: bright, 100: bright, 200: bright, 300: bright,
+  400: dim, 500: dim, 600: faint,
+  700: t.surfaceStrong, 800: t.surfaceMuted, 900: t.bg, 950: t.bg,
+})
+
+const stockBridge = {
+  gray:   grayFamily(t.text, t.muted, t.subtle),
+  zinc:   grayFamily(t.text, t.muted, t.subtle),
+  neutral: grayFamily(t.text, t.muted, t.subtle),
+  stone:  grayFamily(t.text, t.muted, t.subtle),
+  slate:  grayFamily(t.text, t.muted, t.subtle),
+  emerald: { 50: t.accentTint, 100: t.accentTint, 200: t.accentTint, 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 800: t.accent, 900: t.accent, 950: t.accentTint },
+  green:  { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 950: t.accentTint },
+  teal:   { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 950: t.accentTint },
+  lime:   { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent },
+  yellow: { 200: t.warn, 300: t.warn, 400: t.warn, 500: t.warn, 600: t.warn, 700: t.warn, 900: t.warnTint, 950: t.warnTint },
+  amber:  { 100: t.warnTint, 200: t.warn, 300: t.warn, 400: t.warn, 500: t.warn, 600: t.warn, 700: t.warn, 800: t.warn, 900: t.warnTint, 950: t.warnTint },
+  orange: { 300: t.warn, 400: t.warn, 500: t.warn, 600: t.warn, 700: t.warn, 950: t.warnTint },
+  red:    { 100: t.dangerTint, 200: t.danger, 300: t.danger, 400: t.danger, 500: t.danger, 600: t.danger, 700: t.danger, 800: t.danger, 900: t.dangerTint, 950: t.dangerTint },
+  rose:   { 200: t.dangerTint, 300: t.danger, 400: t.danger, 500: t.danger, 600: t.danger, 700: t.danger, 950: t.dangerTint },
+  pink:   { 300: t.danger, 400: t.danger, 500: t.danger, 600: t.danger },
+  fuchsia: { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 950: t.accentTint },
+  purple: { 100: t.accentTint, 200: t.accentTint, 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 800: t.accent, 900: t.accent, 950: t.accentTint },
+  violet: { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 950: t.accentTint },
+  indigo: { 300: t.accent, 400: t.accent, 500: t.accent, 600: t.accent, 700: t.accent, 950: t.accentTint },
+  blue:   { 100: t.infoTint, 200: t.info, 300: t.info, 400: t.info, 500: t.info, 600: t.info, 700: t.info, 900: t.infoTint, 950: t.infoTint },
+  sky:    { 300: t.info, 400: t.info, 500: t.info, 600: t.info, 700: t.info, 950: t.infoTint },
+  cyan:   { 100: t.infoTint, 200: t.info, 300: t.info, 400: t.info, 500: t.info, 600: t.info, 700: t.info, 900: t.infoTint, 950: t.infoTint },
+}
+
 const config: Config = {
   darkMode: ['class'],
   content: ['./src/**/*.{ts,tsx}'],
@@ -12,6 +66,7 @@ const config: Config = {
     },
     extend: {
       colors: {
+        ...stockBridge,
         // ── Design tokens ─────────────────────────────────────────────
         bg:        { DEFAULT: 'hsl(var(--bg) / <alpha-value>)', subtle: 'hsl(var(--bg-subtle) / <alpha-value>)', raised: 'hsl(var(--bg-raised) / <alpha-value>)' },
         surface:   { DEFAULT: 'hsl(var(--surface) / <alpha-value>)', muted: 'hsl(var(--surface-muted) / <alpha-value>)', strong: 'hsl(var(--surface-strong) / <alpha-value>)' },
@@ -36,7 +91,10 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'var(--font-poppins)', 'Poppins', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // Mono follows the admin-configured theme font so admin and trader
+        // dashboards render identical typography; tabular-nums keeps
+        // numeric columns aligned (see globals.css .font-mono rule).
+        mono: ['var(--font-sans)', 'var(--font-poppins)', 'Poppins', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         poppins: ['var(--font-poppins)', 'Poppins', 'sans-serif'],
         inter: ['var(--font-inter)', 'Inter', 'sans-serif'],
         jakarta: ['var(--font-plus-jakarta)', 'Plus Jakarta Sans', 'sans-serif'],

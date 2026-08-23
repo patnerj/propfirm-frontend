@@ -257,6 +257,34 @@
   /* Number ticks */
   .tabular { font-variant-numeric: tabular-nums; }
 
+  /* Mono class now renders the theme font; keep numerals aligned. */
+  .font-mono { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+  /* ── LEGACY ARBITRARY-HEX BRIDGE ─────────────────────────────────────
+     Old admin pages hardcode hex values as arbitrary Tailwind classes.
+     Route them through theme tokens so admin color config re-skins the
+     whole panel (and site) without touching those files. */
+  .bg-\[\#0B0F19\]      { background-color: hsl(var(--bg)) !important; }
+  .bg-\[\#0E1322\]      { background-color: hsl(var(--surface-muted)) !important; }
+  .bg-\[\#0e1726\]      { background-color: hsl(var(--surface-muted)) !important; }
+  .bg-\[\#111827\]      { background-color: hsl(var(--surface-muted)) !important; }
+  .bg-\[\#151D2C\]      { background-color: hsl(var(--surface-strong)) !important; }
+  .bg-\[\#1A2234\]      { background-color: hsl(var(--surface-strong)) !important; }
+  .bg-\[\#1F2937\]      { background-color: hsl(var(--surface-strong)) !important; }
+  .bg-\[\#10B981\]      { background-color: hsl(var(--accent)) !important; }
+  .bg-\[\#0088CC\]      { background-color: hsl(var(--info)) !important; }
+  .bg-\[\#38BDF8\]      { background-color: hsl(var(--info)) !important; }
+  .bg-\[\#6366F1\]      { background-color: hsl(var(--accent)) !important; }
+  .bg-\[\#5865F2\]      { background-color: hsl(var(--accent)) !important; }
+  .bg-\[\#F9FAFB\]      { background-color: hsl(var(--text)) !important; }
+  .border-\[\#1F2937\]  { border-color: hsl(var(--border)) !important; }
+  .border-\[\#10B981\]  { border-color: hsl(var(--accent)) !important; }
+  .border-\[\#0088CC\]  { border-color: hsl(var(--info)) !important; }
+  .border-\[\#5865F2\]  { border-color: hsl(var(--accent)) !important; }
+  .text-\[\#10B981\]    { color: hsl(var(--accent)) !important; }
+  .text-\[\#0088CC\]    { color: hsl(var(--info)) !important; }
+  .text-\[\#5865F2\]    { color: hsl(var(--accent)) !important; }
+
   /* ── POLISH LAYER v2 ─────────────────────────────────────────────── */
 
   /* Gradient brand text — hero numbers & titles */
