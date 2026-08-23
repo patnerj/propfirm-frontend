@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/lib/api'
+import { clearFxsimCache } from '@/lib/fxsim'
 import { fmtUSD, toNum } from '@/lib/format'
 import { useAuth } from '@/store/auth'
 import type { ChallengePlan, PaymentConfig } from '@/types/api'
@@ -163,7 +164,10 @@ function CheckoutInner() {
     setLoading(false)
     if (res.ok && !res.data.requires_payment) {
       toast.success('Challenge started!')
-      router.push('/dashboard?started=' + plan.id)
+      // FIX: full reload instead of router.push — kills SPA/RSC staleness so the
+      // new challenge shows up INSTANTLY on the dashboard (was lagging ~30s).
+      clearFxsimCache()
+      window.location.href = '/dashboard?started=' + plan.id
     } else {
       setError(res.ok ? (res.data.message || 'Unable to start challenge') : res.error)
     }
