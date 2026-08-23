@@ -256,6 +256,61 @@
 
   /* Number ticks */
   .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ── POLISH LAYER v2 ─────────────────────────────────────────────── */
+
+  /* Gradient brand text — hero numbers & titles */
+  .text-gradient {
+    background: linear-gradient(135deg, HSL(var(--accent)) 10%, HSL(var(--success)) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Soft accent glow on card hover */
+  .card-glow {
+    transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+  }
+  .card-glow:hover {
+    border-color: HSL(var(--accent) / 0.35);
+    box-shadow:
+      0 0 0 1px HSL(var(--accent) / 0.12),
+      0 12px 32px -12px HSL(var(--accent) / 0.28);
+  }
+
+  /* Light-sweep shine for primary CTAs */
+  .btn-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-shine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.18) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform .6s ease;
+    pointer-events: none;
+  }
+  .btn-shine:hover::after { transform: translateX(120%); }
+
+  /* Brand emblem tile */
+  .brand-emblem {
+    @apply mx-auto mb-3 h-11 w-11 rounded-xl grid place-items-center;
+    background: linear-gradient(135deg, HSL(var(--accent)), HSL(var(--success)));
+    box-shadow: 0 8px 24px -6px HSL(var(--accent) / 0.5);
+  }
+
+  /* Accessibility: respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* Fix Puck Builder background in dark mode */

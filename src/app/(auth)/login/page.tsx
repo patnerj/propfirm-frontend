@@ -101,8 +101,11 @@ function LoginForm() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
     >
-      <Card className="p-8 glass-strong border-border-strong">
+      <Card className="p-8 glass-strong border-border-strong card-glow">
         <div className="text-center mb-6">
+          <div className="brand-emblem">
+            <span className="text-lg font-black text-slate-950">P</span>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">{twoFA ? 'Enter your code' : 'Welcome back'}</h1>
           <p className="text-sm text-text-muted mt-1">
             {twoFA ? 'We emailed you a 6-digit verification code' : 'Sign in to your trader account'}
@@ -180,7 +183,7 @@ function LoginForm() {
             Keep me signed in
           </label>
 
-          <Button type="submit" className="w-full" loading={loading} size="lg">
+          <Button type="submit" className="w-full btn-shine" loading={loading} size="lg">
             Sign in
             <ArrowRight className="h-4 w-4" />
           </Button>

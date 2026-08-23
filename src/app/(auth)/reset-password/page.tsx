@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Mail, CheckCircle2, KeyRound } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, KeyRound } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   // Request mode (enter email) vs. complete mode (key+login from the email link).
@@ -105,8 +105,8 @@ export default function ResetPasswordPage() {
         ) : (
           <>
             <div className="text-center mb-6">
-              <div className="h-12 w-12 rounded-full bg-accent-muted text-accent flex items-center justify-center mx-auto mb-4">
-                <Mail className="h-6 w-6" />
+              <div className="brand-emblem">
+                <span className="text-lg font-black text-slate-950">P</span>
               </div>
               <h1 className="text-xl font-bold tracking-tight">Reset your password</h1>
               <p className="text-sm text-text-muted mt-1">We&apos;ll email you a reset link</p>
