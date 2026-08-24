@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // HTTPS-only wildcard: branding/banners are admin-configured and can come
+    // from arbitrary CDNs, so a static allowlist would break deployments.
+    // Protocol is pinned to https to avoid mixed-content loading.
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
     ],

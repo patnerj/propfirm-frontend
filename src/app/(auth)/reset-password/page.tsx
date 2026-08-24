@@ -41,13 +41,19 @@ export default function ResetPasswordPage() {
   async function submitComplete(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     if (password !== confirm) { setError('Passwords do not match.'); return }
     setLoading(true)
     const res = await api.auth.doReset(resetKey, keyLogin, password)
     setLoading(false)
-    if (res.ok) setDone(true)
-    else setError(res.error || 'Reset link is invalid or expired. Request a new one.')
+    if (res.ok) {
+      // Scrub the one-time reset key + login from the address bar so it does
+      // not linger in browser history / screen shares after success.
+      try { window.history.replaceState(null, '', window.location.pathname) } catch { /* ignore */ }
+      setDone(true)
+    } else {
+      setError(res.error || 'Reset link is invalid or expired. Request a new one.')
+    }
   }
 
   const completeMode = !!resetKey && !!keyLogin

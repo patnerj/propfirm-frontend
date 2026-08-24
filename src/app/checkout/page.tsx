@@ -320,8 +320,8 @@ function CheckoutInner() {
           
           <AnimatePresence mode="wait">
             {step === 'review'  && <ReviewStep    key="review"  plan={plan} onNext={() => isFree ? startFree() : setStep('gateway')} loading={loading} isFree={isFree} error={error} coupon={coupon} setCoupon={setCoupon} applyCoupon={applyCoupon} clearCoupon={clearCoupon} couponInfo={couponInfo} couponErr={couponErr} couponBusy={couponBusy} />}
-            {step === 'gateway' && <GatewayStep   key="gateway" plan={plan} gateways={gateways} configLoaded={!!config} chooseGateway={chooseGateway} onBack={() => setStep('review')} loading={loading} error={error} />}
-            {step === 'manual'  && <ManualStep    key="manual"  plan={plan} gateway={gateway} config={config} orderId={orderId} proofFile={proofFile} setProof={setProof} txnRef={txnRef} setTxnRef={setTxnRef} onBack={() => setStep('gateway')} onSubmit={submitProof} loading={loading} error={error} />}
+            {step === 'gateway' && <GatewayStep   key="gateway" plan={plan} gateways={gateways} configLoaded={!!config} chooseGateway={chooseGateway} onBack={() => setStep('review')} loading={loading} error={error} amountDue={finalPrice} couponApplied={!!couponInfo} />}
+            {step === 'manual'  && <ManualStep    key="manual"  plan={plan} gateway={gateway} config={config} orderId={orderId} proofFile={proofFile} setProof={setProof} txnRef={txnRef} setTxnRef={setTxnRef} onBack={() => setStep('gateway')} onSubmit={submitProof} loading={loading} error={error} amountDue={finalPrice} />}
             {step === 'success' && <SuccessStep   key="success" />}
           </AnimatePresence>
         </div>
@@ -443,7 +443,7 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
 
 // ── Step 2: Pick gateway ───────────────────────────────────────────────────
 function GatewayStep({
-  plan, gateways, configLoaded, chooseGateway, onBack, loading, error,
+  plan, gateways, configLoaded, chooseGateway, onBack, loading, error, amountDue, couponApplied,
 }: {
   plan:     ChallengePlan
   gateways: { id: Gateway; label: string; sub: string; icon: React.ComponentType<{ className?: string }>; tone: string }[]
@@ -452,6 +452,8 @@ function GatewayStep({
   onBack:   () => void
   loading:  boolean
   error:    string | null
+  amountDue: number
+  couponApplied: boolean
 }) {
   return (
     <motion.div
@@ -463,7 +465,13 @@ function GatewayStep({
     >
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Payment Method</h2>
-        <p className="text-text-muted mt-1">Select how you would like to pay {fmtUSD(plan.price)}.</p>
+        <p className="text-text-muted mt-1">
+          Select how you would like to pay{' '}
+          {couponApplied && (
+            <span className="line-through text-text-muted/70 mr-1">{fmtUSD(plan.price)}</span>
+          )}
+          <span className={couponApplied ? 'text-success font-semibold' : ''}>{fmtUSD(amountDue)}</span>.
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -524,7 +532,7 @@ function GatewayStep({
 
 // ── Step 3: Manual — show instructions, upload proof ───────────────────────
 function ManualStep({
-  plan, gateway, config, orderId, proofFile, setProof, txnRef, setTxnRef, onBack, onSubmit, loading, error,
+  plan, gateway, config, orderId, proofFile, setProof, txnRef, setTxnRef, onBack, onSubmit, loading, error, amountDue,
 }: {
   plan:     ChallengePlan
   gateway:  Gateway
@@ -538,6 +546,7 @@ function ManualStep({
   onSubmit: () => void
   loading:  boolean
   error:    string | null
+  amountDue: number
 }) {
   return (
     <motion.div
@@ -550,7 +559,8 @@ function ManualStep({
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Manual Crypto Payment</h2>
         <p className="text-text-muted mt-1">
-          Order <code className="text-text font-mono bg-bg-subtle px-1.5 py-0.5 rounded">#{orderId}</code> · {fmtUSD(plan.price)} due
+          Order <code className="text-text font-mono bg-bg-subtle px-1.5 py-0.5 rounded">#{orderId}</code> ·{' '}
+          <span className="text-text font-semibold">{fmtUSD(amountDue)}</span> due
         </p>
       </div>
 

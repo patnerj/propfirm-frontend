@@ -167,6 +167,21 @@ export default function DashboardOverview() {
                     <div className="flex items-center gap-2">
                       <span className="text-2xs uppercase tracking-wider text-text-muted font-semibold">{phaseLabel}</span>
                       <Badge tone={statusTone(active.status)}>{statusLabel(active.status)}</Badge>
+                      {/* Challenge expiry — visible countdown, warn when close to the wall */}
+                      {metrics && Number.isFinite(metrics.days_remaining) && active.status === 'active' && (
+                        <span
+                          className={
+                            metrics.days_remaining <= 3
+                              ? 'text-2xs px-2 py-0.5 rounded-full border font-semibold text-danger border-danger/30 bg-danger-muted'
+                              : metrics.days_remaining <= 7
+                                ? 'text-2xs px-2 py-0.5 rounded-full border font-semibold text-warn border-warn/30 bg-warn-muted'
+                                : 'text-2xs px-2 py-0.5 rounded-full border font-medium text-text-muted border-border-subtle bg-bg-subtle'
+                          }
+                          title="Days remaining before this challenge phase expires"
+                        >
+                          {metrics.days_remaining}d left
+                        </span>
+                      )}
                     </div>
                     <div className="mt-2 text-3xl font-extrabold tracking-tight tabular text-text">{fmtUSD(acc.equity)}</div>
                     <div className="text-2xs text-text-muted mt-1">

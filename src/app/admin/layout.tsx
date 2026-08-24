@@ -20,6 +20,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Auth & Impersonation Guard
   useEffect(() => {
     if (!ready) return
+    // Re-verify the role against the SERVER on every admin mount — never trust
+    // cached client state for an authorization decision.
+    void useAuth.getState().refresh(true)
     if (!user) {
       router.replace('/login')
       return

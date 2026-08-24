@@ -188,6 +188,17 @@ async function getThemeCSS() {
   return '';
 }
 
+/**
+ * Sanitize a theme value before splicing it into a CSS string. The theme
+ * cookie is client-writable, so an unsanitized fontFamily/primaryForeground
+ * is a persistent CSS-injection sink (e.g. `x} body{background:url(//evil)}`).
+ * Allow only a safe charset and cap length; anything else falls back.
+ */
+function safeCssValue(v: unknown, fallback: string): string {
+  const s = typeof v === 'string' ? v.trim() : ''
+  return /^[a-zA-Z0-9 _#%(),.'"-]{1,120}$/.test(s) ? s : fallback
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let themeCss = '';
   try {
@@ -198,8 +209,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       const data: ThemeSettings = JSON.parse(decoded);
       if (data && data.primaryColor) {
         const accentHsl = hexToHsl(data.primaryColor);
-        const foreground = data.primaryForeground || '#ffffff';
-        const fontFamily = data.fontFamily || 'var(--font-poppins), Poppins, sans-serif';
+        const foreground = safeCssValue(data.primaryForeground, '#ffffff');
+        const fontFamily = safeCssValue(data.fontFamily, 'var(--font-poppins), Poppins, sans-serif');
         themeCss = `
           :root { --accent: ${accentHsl}; --accent-hover: ${accentHsl}; --font-sans: ${fontFamily}; }
           .dark { --accent: ${accentHsl}; --accent-hover: ${accentHsl}; }
@@ -272,7 +283,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               }
 
               if (data && data.primaryColor) {
+                var safeVal = function(v, fb) {
+                  if (typeof v !== 'string') return fb;
+                  v = v.trim();
+                  return (/^[a-zA-Z0-9 _#%(),.'"-]{1,120}$/.test(v) && v) || fb;
+                };
+                var safeFont = safeVal(data.fontFamily, chosenFont);
+                var safeFg = safeVal(data.primaryForeground, '#ffffff');
                 var hex = data.primaryColor.replace(/^#/, '');
+                if (!/^[0-9a-fA-F]{3}$/.test(hex) && !/^[0-9a-fA-F]{6}$/.test(hex)) { return; }
                 if (hex.length === 3) hex = hex.split('').map(function(x){return x+x}).join('');
                 var r = parseInt(hex.substring(0, 2), 16) / 255, g = parseInt(hex.substring(2, 4), 16) / 255, b = parseInt(hex.substring(4, 6), 16) / 255;
                 var max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -292,7 +311,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   styleEl.id = 'fxsim-dynamic-theme-local';
                   document.head.appendChild(styleEl);
                 }
-                styleEl.innerHTML = ':root { --accent: ' + accentHsl + '; --accent-hover: ' + accentHsl + '; --font-sans: ' + (data.fontFamily || chosenFont) + '; } .dark { --accent: ' + accentHsl + '; --accent-hover: ' + accentHsl + '; } body, html { font-family: ' + (data.fontFamily || chosenFont) + ' !important; } .bg-primary { color: ' + (data.primaryForeground || '#ffffff') + ' !important; }';
+                styleEl.innerHTML = ':root { --accent: ' + accentHsl + '; --accent-hover: ' + accentHsl + '; --font-sans: ' + safeFont + '; } .dark { --accent: ' + accentHsl + '; --accent-hover: ' + accentHsl + '; } body, html { font-family: ' + safeFont + ' !important; } .bg-primary { color: ' + safeFg + ' !important; }';
               }
             } catch (e) {}
           })();

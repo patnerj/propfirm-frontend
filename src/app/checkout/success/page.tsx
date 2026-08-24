@@ -2,13 +2,14 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { invalidateFxsim } from '@/lib/fxsim'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ArrowRight, Clock, Loader2 } from 'lucide-react'
+import type { PaymentOrder } from '@/types/api'
 
 export default function CheckoutSuccessPage() {
   return (
@@ -18,11 +19,16 @@ export default function CheckoutSuccessPage() {
   )
 }
 
+type Phase = 'loading' | 'success' | 'processing' | 'cancel' | 'error'
+
+const RECENT_WINDOW_MS = 15 * 60 * 1000   // order created within the last 15 min
+const POLL_ATTEMPTS    = 5                 // webhook can lag a few seconds behind redirect
+const POLL_DELAY_MS    = 2_500
+
 function CheckoutSuccessInner() {
-  const router = useRouter()
   const params = useSearchParams()
   const status = params.get('status') // 'success' | 'cancel' | null
-  const [phase, setPhase] = useState<'loading' | 'success' | 'cancel' | 'error'>('loading')
+  const [phase, setPhase] = useState<Phase>('loading')
 
   useEffect(() => {
     // Invalidate all the caches so the dashboard reflects the new challenge immediately
@@ -32,13 +38,33 @@ function CheckoutSuccessInner() {
 
     if (status === 'cancel') { setPhase('cancel'); return }
 
-    // Otherwise, treat as success — re-query the user's challenges to confirm
-    // a new one was created (or payment recorded).
+    // Verify the payment against REAL order state — never trust the redirect.
+    // Gateway webhooks (Stripe/Confirmo/CoinPayments) mark orders 'approved';
+    // manual-crypto orders stay 'submitted' until an admin reviews the proof.
+    let cancelled = false
     ;(async () => {
-      const res = await api.challengeMy()
-      if (res.ok) setPhase('success')
-      else        setPhase('error')
+      for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
+        if (cancelled) return
+        const res = await api.paymentMyOrders()
+        if (!res.ok) {
+          if (attempt === POLL_ATTEMPTS - 1) { setPhase('error'); return }
+        } else {
+          const orders: PaymentOrder[] = Array.isArray(res.data) ? res.data : []
+          const cutoff = Date.now() - RECENT_WINDOW_MS
+          const recent = orders.filter((o) => {
+            const created = new Date(o.created_at.replace(' ', 'T') + 'Z').getTime()
+            return Number.isFinite(created) && created >= cutoff
+          })
+          if (recent.some((o) => o.status === 'approved')) { setPhase('success'); return }
+          const awaiting = recent.some((o) => o.status === 'pending' || o.status === 'submitted')
+          if (awaiting && attempt === POLL_ATTEMPTS - 1) { setPhase('processing'); return }
+        }
+        await new Promise((r) => setTimeout(r, POLL_DELAY_MS))
+      }
+      if (!cancelled) setPhase('error')
     })()
+
+    return () => { cancelled = true }
   }, [status])
 
   if (phase === 'loading') {
@@ -61,6 +87,24 @@ function CheckoutSuccessInner() {
     )
   }
 
+  if (phase === 'processing') {
+    return (
+      <Shell>
+        <div className="h-12 w-12 rounded-full bg-warn-muted text-warn flex items-center justify-center">
+          <Clock className="h-6 w-6" />
+        </div>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">Payment received — pending confirmation</h1>
+        <p className="mt-2 text-sm text-text-muted max-w-md mx-auto">
+          Your order is in our queue. Crypto/manual payments are confirmed after verification — you&apos;ll get an email as soon as your challenge is activated. You can track the status from your dashboard.
+        </p>
+        <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+          <Button asChild><Link href="/dashboard">Go to dashboard <ArrowRight className="h-4 w-4" /></Link></Button>
+          <Button asChild variant="ghost"><Link href="/dashboard/payouts">View order status</Link></Button>
+        </div>
+      </Shell>
+    )
+  }
+
   if (phase === 'error') {
     return (
       <Shell>
@@ -77,7 +121,7 @@ function CheckoutSuccessInner() {
     )
   }
 
-  // success
+  // success — verified against an 'approved' order via the API
   return (
     <Shell>
       <motion.div

@@ -129,9 +129,12 @@ export default function AdminCommandCenter() {
     staleTime: 15000,
   })
 
+  // 'pending' is a valid backend status — the old 'requested' value was
+  // silently dropped server-side, so this list (and every count below)
+  // actually included paid/rejected payouts too.
   const { data: payoutsList, isLoading: payoutsLoading } = useQuery({
-    queryKey: ['admin-payouts-list', 'requested'],
-    queryFn: () => api.admin.payoutsList('requested').then(res => res.ok ? res.data : []),
+    queryKey: ['admin-payouts-list', 'pending'],
+    queryFn: () => api.admin.payoutsList('pending').then(res => res.ok ? res.data : []),
     staleTime: 10000,
   })
 

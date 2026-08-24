@@ -1,12 +1,71 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
+/**
+ * Route protection via a server-minted, HMAC-signed HttpOnly session cookie
+ * (`fxsim_sess`, set by /api/auth/session after backend token verification).
+ *
+ * The old scheme trusted `fxsim_authed=1` — a cookie any user could set from
+ * devtools — letting anyone render the admin/dashboard shells. Now the cookie
+ * value is `base64url(payload).base64url(hmac)` and the signature is verified
+ * here with Web Crypto; forging it requires FXSIM_SESSION_SECRET.
+ *
+ * Legacy fallback: if FXSIM_SESSION_SECRET is not configured the old
+ * presence-flag behaviour is preserved so deployments don't break — set the
+ * shared secret on both sides to enable signed mode.
+ */
 
-  // Check if fxsim_authed session flag cookie exists OR WordPress auth cookie
-  const cookies = request.cookies.getAll()
-  const hasAuthCookie = request.cookies.get('fxsim_authed')?.value === '1' || cookies.some(c => c.name.startsWith('wordpress_logged_in_'))
+const SESSION_COOKIE = 'fxsim_sess'
+
+type SessionPayload = { uid: number; role: 'admin' | 'user'; exp: number }
+
+function b64urlToBytes(s: string): Uint8Array<ArrayBuffer> {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/')
+  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))
+  const buf = new ArrayBuffer(bin.length)
+  const bytes = new Uint8Array(buf)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes
+}
+
+async function verifySession(value: string | undefined, secret: string): Promise<SessionPayload | null> {
+  if (!value || !secret) return null
+  const dot = value.lastIndexOf('.')
+  if (dot <= 0) return null
+  const payload = value.slice(0, dot)
+  const sig = value.slice(dot + 1)
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
+    )
+    const ok = await crypto.subtle.verify(
+      'HMAC', key, b64urlToBytes(sig), new TextEncoder().encode(payload),
+    )
+    if (!ok) return null
+    const parsed = JSON.parse(new TextDecoder().decode(b64urlToBytes(payload))) as SessionPayload
+    if (!parsed?.uid || !parsed?.exp || parsed.exp < Math.floor(Date.now() / 1000)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const secret = process.env.FXSIM_SESSION_SECRET || process.env.SESSION_SECRET
+
+  // Signed mode: verify the HMAC cookie. Legacy mode (no secret configured):
+  // fall back to the old presence-flag checks so existing deployments keep working.
+  let session: SessionPayload | null = null
+  if (secret) {
+    session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value, secret)
+  }
+  const hasAuthCookie = secret
+    ? session !== null
+    : request.cookies.get('fxsim_authed')?.value === '1' ||
+      request.cookies.getAll().some(c => c.name.startsWith('wordpress_logged_in_'))
+  const isAdmin = secret ? session?.role === 'admin' : hasAuthCookie
 
   // Canonical redirect: strictly map any /dashboard/admin* URL to /admin*
   if (path === '/dashboard/admin' || path === '/dashboard/admin/') {
@@ -30,22 +89,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308)
   }
 
-  // Protect /admin routes
+  const loginRedirect = () => {
+    const url = new URL('/login', request.url)
+    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+    return NextResponse.redirect(url)
+  }
+
+  // Protect /admin routes — signed mode requires the admin role claim.
   if (path === '/admin' || path.startsWith('/admin/')) {
-    if (!hasAuthCookie) {
-      const url = new URL('/login', request.url)
-      url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+    if (!hasAuthCookie) return loginRedirect()
+    if (secret && !isAdmin) {
+      // Authenticated non-admin poking at admin shells → bounce to dashboard.
+      const url = new URL('/dashboard', request.url)
       return NextResponse.redirect(url)
     }
   }
 
   // Protect /dashboard routes
   if (path.startsWith('/dashboard')) {
-    if (!hasAuthCookie) {
-      const url = new URL('/login', request.url)
-      url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
-      return NextResponse.redirect(url)
-    }
+    if (!hasAuthCookie) return loginRedirect()
   }
 
   // Let client-side code handle redirecting away from auth pages if actually logged in.

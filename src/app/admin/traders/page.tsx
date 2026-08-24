@@ -7,7 +7,7 @@ import {
   Search, Filter, Download, MoreVertical, Shield, User, 
   ExternalLink, Sliders, KeyRound, Ban, CheckCircle2, 
   Clock, AlertTriangle, RefreshCw, Plus, ArrowUpRight,
-  TrendingUp, TrendingDown, DollarSign, Eye, UserCheck
+  TrendingUp, TrendingDown, DollarSign, Eye, UserCheck, Wallet
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -17,7 +17,10 @@ import { setSession, clearFxsimCache } from '@/lib/fxsim'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Input, Label, Textarea } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
 import { DataTable, ColumnDef } from '@/components/ui/DataTable'
 import { 
   DropdownMenu, 
@@ -104,6 +107,9 @@ export default function TradersHubPage() {
   // Impersonate Confirmation State
   const [impersonateTarget, setImpersonateTarget] = useState<TraderRowItem | null>(null)
   const [isImpersonating, setIsImpersonating] = useState(false)
+
+  // Balance Adjustment State (ported from the retired /dashboard/admin/users page)
+  const [balanceTarget, setBalanceTarget] = useState<TraderRowItem | null>(null)
 
   const handleImpersonate = async (trader: TraderRowItem) => {
     if (!adminUser) {
@@ -544,6 +550,14 @@ export default function TradersHubPage() {
                 Apply Custom Overrides
               </DropdownMenuItem>
 
+              <DropdownMenuItem
+                className="gap-2.5"
+                onClick={() => setBalanceTarget(row)}
+              >
+                <Wallet className="h-4 w-4 text-emerald-400" />
+                Adjust Balance
+              </DropdownMenuItem>
+
               <DropdownMenuItem 
                 className="gap-2.5"
                 onClick={() => handleResetPassword(row)}
@@ -800,6 +814,15 @@ export default function TradersHubPage() {
         }}
       />
 
+      {/* ── Balance Adjustment Dialog ─────────────────────────────────────── */}
+      {balanceTarget && (
+        <AdjustBalanceDialog
+          user={balanceTarget}
+          onClose={() => setBalanceTarget(null)}
+          onSaved={() => refetchUsers()}
+        />
+      )}
+
       {/* ── Impersonate Confirmation Dialog ────────────────────────────────── */}
       <ConfirmDialog
         isOpen={!!impersonateTarget}
@@ -819,5 +842,71 @@ export default function TradersHubPage() {
       />
 
     </div>
+  )
+}
+
+// ── Balance adjustment (ported from the retired /dashboard/admin/users page) ──
+function AdjustBalanceDialog({ user, onClose, onSaved }: {
+  user: TraderRowItem; onClose: () => void; onSaved: () => void
+}) {
+  const [amount, setAmount] = useState('')
+  const [note,   setNote]   = useState('Admin adjustment')
+  const [busy,   setBusy]   = useState(false)
+
+  const amountN = parseFloat(amount)
+  const isAdd = amountN > 0
+  const newBalance = (user.balance || 0) + (Number.isFinite(amountN) ? amountN : 0)
+
+  const submit = async () => {
+    if (!Number.isFinite(amountN) || amountN === 0) { toast.error('Enter a non-zero amount'); return }
+    if (!user.account_id) { toast.error('User has no trading account'); return }
+    setBusy(true)
+    const res = await api.admin.adjustBalance(user.user_id, Number(user.account_id), amountN, note.trim() || 'Admin adjustment')
+    setBusy(false)
+    if (res.ok && res.data.success) {
+      toast.success(`Balance updated to ${formatExactMoney(res.data.new_balance)}`)
+      onSaved(); onClose()
+    } else {
+      toast.error(res.ok ? 'Adjustment failed' : res.error)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Adjust {user.name}&apos;s balance</DialogTitle>
+          <DialogDescription>Use a negative amount to deduct. This is recorded in the admin audit log.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="rounded-md bg-[#0B0F19] border border-[#1F2937] p-3 text-xs space-y-1">
+            <div className="flex justify-between"><span className="text-gray-400">Current balance</span><span className="font-mono text-gray-200">{formatExactMoney(user.balance)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-400">Adjustment</span>
+              <span className={`font-mono font-medium ${amountN > 0 ? 'text-emerald-400' : amountN < 0 ? 'text-rose-400' : 'text-gray-500'}`}>
+                {Number.isFinite(amountN) && amountN !== 0 ? (isAdd ? '+' : '') + formatExactMoney(amountN) : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between pt-1 border-t border-[#1F2937]">
+              <span className="font-medium text-gray-300">New balance</span>
+              <span className="font-mono font-medium text-white">{formatExactMoney(newBalance)}</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="amt">Amount (USD)</Label>
+            <Input id="amt" type="text" inputMode="decimal" value={amount}
+                   onChange={(e) => setAmount(e.target.value.replace(/[^\d.\-]/g, ''))}
+                   placeholder="e.g. -500 to deduct $500" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="note">Note (audit log)</Label>
+            <Textarea id="note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit} loading={busy} disabled={!Number.isFinite(amountN) || amountN === 0}>Apply</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

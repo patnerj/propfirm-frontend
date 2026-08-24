@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { api } from '@/lib/api'
 import { invalidateFxsim, setSession, hydrateSession, clearFxsimCache } from '@/lib/fxsim'
+import { sessionEstablish, sessionDestroy } from '@/lib/session'
 import type { AuthUser } from '@/types/api'
 
 interface AuthState {
@@ -59,6 +60,8 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (res.ok && res.data.user) {
       const token = (res.data as any).token || res.data.nonce
       setSession({ nonce: res.data.nonce, bearer: token })
+      // Server-verified signed cookie for middleware route protection.
+      if ((res.data as any).token) void sessionEstablish((res.data as any).token, remember)
       // Clear any cached anonymous responses
       clearFxsimCache()
       // Defensive: clear any leftover impersonation record from a prior session.
@@ -81,6 +84,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (res.ok) {
       const token = (res.data as any)?.token || res.data?.nonce
       setSession({ nonce: res.data.nonce, bearer: token })
+      if ((res.data as any)?.token) void sessionEstablish((res.data as any).token, remember)
       clearFxsimCache()
       try {
         if (typeof window !== 'undefined') sessionStorage.removeItem('fxsim:impersonating')
@@ -100,6 +104,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (res.ok) {
       const token = (res.data as any)?.token || res.data?.nonce
       setSession({ nonce: res.data.nonce, bearer: token })
+      if ((res.data as any)?.token) void sessionEstablish((res.data as any).token, true)
       clearFxsimCache()
       set({ user: res.data.user, loading: false, ready: true, lastChecked: Date.now(), error: null })
       return { ok: true }
@@ -111,6 +116,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   signout: async () => {
     await api.auth.logout().catch(() => null)
     setSession({ nonce: null, bearer: null })
+    void sessionDestroy()
     clearFxsimCache()
     try {
       if (typeof window !== 'undefined') sessionStorage.removeItem('fxsim:impersonating')
@@ -132,6 +138,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     else if (res.status === 401 || res.status === 403) {
       // Session expired — clear without calling /logout (likely will 401 too)
       setSession({ nonce: null, bearer: null })
+      void sessionDestroy()
       clearFxsimCache()
       set({ user: null, lastChecked: Date.now() })
     }

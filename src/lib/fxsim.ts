@@ -78,10 +78,8 @@ export function setSession(next: Partial<Session>) {
       if (next.nonce !== undefined) {
         if (next.nonce) {
           localStorage.setItem('fxsim:nonce', next.nonce)
-          document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
         } else {
           localStorage.removeItem('fxsim:nonce')
-          document.cookie = 'fxsim_authed=; path=/; max-age=0; SameSite=Lax;'
         }
       }
       if (next.bearer !== undefined) {
@@ -101,9 +99,9 @@ export function hydrateSession() {
     const session = getSessionState()
     session.nonce  = localStorage.getItem('fxsim:nonce')
     session.bearer = localStorage.getItem('fxsim:bearer')
-    if (session.nonce || session.bearer) {
-      document.cookie = 'fxsim_authed=1; path=/; max-age=2592000; SameSite=Lax;'
-    }
+    // NOTE: the middleware-gating cookie is no longer written from JS.
+    // It is an HttpOnly signed cookie set by /api/auth/session after the
+    // backend verifies the session — a client-settable flag was forgeable.
   } catch { /* private mode */ }
 }
 
@@ -122,8 +120,10 @@ export interface RequestOptions {
   cache?:   number
   /** Bypass dedup + cache. Use after mutations. */
   force?:   boolean
-  /** Max retries on 429/5xx (default 2). 0 disables. */
+  /** Max retries on 429/5xx. Default: 2 for GETs, 0 for mutations (never retry money-moving POSTs). */
   retries?: number
+  /** Per-request timeout in ms. Default 10_000; uploads need more (e.g. KYC 60_000). */
+  timeout?: number
 }
 
 function buildQuery(query?: RequestOptions['query']): string {
@@ -181,6 +181,11 @@ export async function fxsim<T = unknown>(
   const url    = FXSIM_BASE + path + buildQuery(opts.query)
   const key    = cacheKey(method, url)
 
+  // Retries are ONLY safe for idempotent GETs. Mutations (payments, payouts,
+  // order placement) must never auto-retry: a network timeout after the server
+  // processed the request would silently duplicate money-moving operations.
+  const maxRetries = opts.retries ?? (method === 'GET' ? 2 : 0)
+
   // ─── GET-only: cache + dedup ───────────────────────────────────────────
   const cache = getCache()
   const inflight = getInflight()
@@ -198,7 +203,6 @@ export async function fxsim<T = unknown>(
   }
 
   // ─── Execute with retries ──────────────────────────────────────────────
-  const maxRetries = opts.retries ?? 2
   const doRequest = async (): Promise<ApiResult<T>> => {
     let attempt = 0
     while (true) {
@@ -330,9 +334,10 @@ async function rawFetch<T>(
   let res: Response
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
-    
-    // Use provided signal if available, otherwise use our 10s timeout
+    const timeoutMs = opts.timeout ?? 10_000
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+    // Use provided signal if available, otherwise our timeout
     const fetchSignal = opts.signal || controller.signal
     init.signal = fetchSignal
 
@@ -341,8 +346,7 @@ async function rawFetch<T>(
   } catch (e) {
     if ((e as Error).name === 'AbortError') {
       return { ok: false, status: 0, error: 'Request timed out. Please check your connection.' }
-    }
-    return { ok: false, status: 0, error: (e as Error).message || 'Network error' }
+    }    return { ok: false, status: 0, error: (e as Error).message || 'Network error' }
   }
 
   let parsed: unknown = null

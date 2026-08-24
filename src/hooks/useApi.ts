@@ -41,14 +41,16 @@ export function useAccountQuery() {
 }
 
 export function useChallengeMyQuery() {
-  return useApiQuery(['challengeMy'], () => api.challengeMy(), { staleTime: DEFAULT_STALE });
+  return useApiQuery(['challengeMy'], () => api.challengeMy(), { interval: DEFAULT_STALE });
 }
 
+// Drawdown/profit metrics poll every 15s (like the terminal) so the rule
+// gauges never freeze at a stale snapshot while a session stays open.
 export function useChallengeMetricsQuery(challengeId?: number) {
   return useApiQuery(
     ['challengeMetrics', challengeId],
     () => api.challengeMetrics(challengeId!),
-    { enabled: !!challengeId, staleTime: DEFAULT_STALE },
+    { enabled: !!challengeId, interval: 15_000 },
   );
 }
 

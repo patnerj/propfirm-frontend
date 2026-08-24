@@ -14,7 +14,6 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Search, Banknote, Loader2, Search as Magnify, CheckCircle2, XCircle, Wallet } from 'lucide-react'
 
 type Filter = 'all' | PayoutStatus
@@ -63,8 +62,6 @@ export function PayoutReviewQueue() {
     return new Set(filtered.map((r) => r.id))
   })
 
-  const [isCryptoConfirmOpen, setIsCryptoConfirmOpen] = useState(false)
-
   const runBulk = async () => {
     if (!bulkAction || selected.size === 0) return
     setBulkBusy(true)
@@ -74,17 +71,6 @@ export function PayoutReviewQueue() {
       toast.success(`${res.data.processed} payout${res.data.processed === 1 ? '' : 's'} ${bulkAction}${res.data.failed ? `, ${res.data.failed} skipped` : ''}`)
       setSelected(new Set()); setBulkAction(null); setBulkNote(''); refetch()
     } else toast.error(res.ok ? 'Bulk action failed' : res.error)
-  }
-
-  const runCryptoBulk = async () => {
-    setBulkBusy(true)
-    const res = await api.admin.payoutsExecuteBulk()
-    setBulkBusy(false)
-    setIsCryptoConfirmOpen(false)
-    if (res.ok && res.data.success) {
-      toast.success(`${res.data.processed} payout(s) paid instantly. ${res.data.failed} failed.`)
-      refetch()
-    } else toast.error(res.ok ? 'Crypto bulk action failed' : res.error)
   }
 
   return (
@@ -108,11 +94,6 @@ export function PayoutReviewQueue() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search user or email" className="pl-9" />
           </div>
-          {filter === 'approved' && rows && rows.length > 0 && (
-            <Button onClick={() => setIsCryptoConfirmOpen(true)} loading={bulkBusy} variant="primary" className="shrink-0">
-              <Wallet className="h-4 w-4 mr-2" /> Pay All
-            </Button>
-          )}
         </div>
       </div>
 
@@ -199,16 +180,6 @@ export function PayoutReviewQueue() {
       {manageFor && (
         <ManageDialog row={manageFor} onClose={() => setManageFor(null)} onDone={() => { setManageFor(null); refetch() }} />
       )}
-
-      <ConfirmDialog
-        isOpen={isCryptoConfirmOpen}
-        onCancel={() => setIsCryptoConfirmOpen(false)}
-        onConfirm={runCryptoBulk}
-        title="Execute Crypto Payouts"
-        description="Are you sure you want to instantly execute and broadcast blockchain payouts for all approved requests?"
-        confirmText="Pay All via Crypto"
-        loading={bulkBusy}
-      />
     </div>
   )
 }

@@ -123,8 +123,10 @@ export const api = {
 
   // ── KYC (identity verification) ───────────────────────────────────────
   kycGet:    () => fxsim<KycInfo>('/kyc', { cache: 10_000 }),
+  // Up to 4 files × 5MB in one multipart call — needs far more than the 10s
+  // default timeout, and mutations never retry (so no duplicate submissions).
   kycSubmit: (form: FormData) =>
-    fxsim<{ success: boolean; message?: string; status?: string }>('/kyc/submit', { form }),
+    fxsim<{ success: boolean; message?: string; status?: string }>('/kyc/submit', { form, timeout: 60_000 }),
 
   // ── Payouts (history + availability + cycle) ──────────────────────────
   payouts:   () => fxsim<PayoutsResp>('/payouts', { cache: 10_000 }),
@@ -157,7 +159,7 @@ export const api = {
   paymentCreate:    (planId: number, gateway: string, couponCode?: string) =>
     fxsim<{ success: boolean; message?: string; order_id?: number; amount?: number; original?: number; discount?: number; payment_url?: string }>('/payment/create', { body: { plan_id: planId, gateway, coupon_code: couponCode } }),
   paymentSubmitProof: (form: FormData) =>
-    fxsim<{ success: boolean; message?: string }>('/payment/submit-proof', { form }),
+    fxsim<{ success: boolean; message?: string }>('/payment/submit-proof', { form, timeout: 60_000 }),
   paymentMyOrders:  ()           => fxsim<PaymentOrder[]>('/payment/my-orders', { cache: 10_000 }),
   stripeCheckout:   (planId: number, couponCode?: string) =>
     fxsim<{ success: boolean; message?: string; checkout_url?: string }>('/payment/stripe-checkout', { body: { plan_id: planId, coupon_code: couponCode } }),
@@ -229,7 +231,7 @@ export const api = {
     challenges:   (params?: { user_ids?: string | number[]; page?: number; limit?: number; search?: string; status?: string }) =>
       fxsim<{ challenges: ChallengeAccount[]; total?: number; page?: number; pages?: number; limit?: number; pending_payouts: unknown[] }>('/admin/challenges', { query: params as any, cache: 8_000 }),
     trades:       ()                 => fxsim<Trade[]>('/admin/trades',                                  { cache: 10_000 }),
-    log:          ()                 => fxsim<unknown[]>('/admin/log',                                   { cache: 15_000 }),
+    log:          (page = 1)         => fxsim<unknown[]>('/admin/log',                                   { query: { page }, cache: 15_000 }),
     pendingOrders: ()                => fxsim<PendingOrder[]>('/admin/pending-orders',                   { cache: 5_000 }),
     pendingReject: (id: number, reason: string) =>
       fxsim<{ success: true }>(`/admin/pending-orders/${id}/reject`, { body: { reason } }),
@@ -252,9 +254,7 @@ export const api = {
     riskFlagTrader: (data: { user_id: number; reason?: string }) =>
       fxsim<{ success: boolean; message: string }>('/admin/risk/flag', { body: data }),
     bulkPayouts:  (ids: number[], status: string, note?: string) =>
-      fxsim<{ success: boolean; processed: number; failed: number }>('/admin/bulk/payouts', { body: { ids, status, note } }),
-    payoutsExecuteBulk: () =>
-      fxsim<{ success: boolean; processed: number; failed: number }>('/admin/payouts/execute-bulk', { method: 'POST' }),
+      fxsim<{ success: boolean; processed: number; failed: number }>('/admin/bulk/payouts', { body: { ids, status, note }, retries: 0 }),
     bulkKyc:      (ids: number[], action: 'approve' | 'reject', note?: string) =>
       fxsim<{ success: boolean; processed: number; failed: number }>('/admin/bulk/kyc', { body: { ids, action, note } }),
     saveUserNote: (userId: number, note: string) =>

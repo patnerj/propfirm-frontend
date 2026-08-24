@@ -59,10 +59,10 @@ function KycDocViewer({
         const session = getSession()
         const token = session.bearer || ''
         const baseDocUrl = docPath.startsWith('http') ? docPath : apiUrl(docPath)
-        const urlWithToken = token
-          ? `${baseDocUrl}${baseDocUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
-          : baseDocUrl
 
+        // SECURITY: the token travels in headers ONLY. Query-string tokens leak
+        // into browser history, proxy/access logs and Referer headers (and the
+        // backend rejects query tokens anyway).
         const headers: Record<string, string> = {}
         if (token) {
           headers['Authorization'] = `Bearer ${token}`
@@ -74,18 +74,22 @@ function KycDocViewer({
 
         let res: Response | null = null
         try {
-          // Primary: Direct backend fetch with auth headers and query token
-          res = await fetch(urlWithToken, {
+          // Primary: Direct backend fetch with auth headers
+          res = await fetch(baseDocUrl, {
             headers,
             cache: 'no-store',
           })
         } catch {
           // Fallback: If browser blocked direct fetch, try same-origin proxy
+          // (token forwarded via header — never the URL)
           const match = docPath.match(/\/admin\/kyc\/(\d+)\/doc\/([^/]+)/)
           if (match && token) {
             const [, kycId, docType] = match
-            const proxyUrl = `/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}&token=${encodeURIComponent(token)}`
-            res = await fetch(proxyUrl, { cache: 'no-store' })
+            const proxyUrl = `/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}`
+            res = await fetch(proxyUrl, {
+              cache: 'no-store',
+              headers: { 'X-FXSIM-Token': token, 'Authorization': `Bearer ${token}` },
+            })
           }
         }
 
@@ -145,24 +149,35 @@ function KycDocViewer({
   }
 
   if (error || !blobUrl) {
-    const session = getSession()
-    const directUrl = session.bearer
-      ? `${apiUrl(docPath)}${apiUrl(docPath).includes('?') ? '&' : '?'}token=${encodeURIComponent(session.bearer)}`
-      : apiUrl(docPath)
+    // Retry via the same-origin proxy (auth via header — no token in any URL).
+    const retryViaProxy = () => {
+      const session = getSession()
+      const token = session.bearer || ''
+      const match = docPath.match(/\/admin\/kyc\/(\d+)\/doc\/([^/]+)/)
+      if (!match || !token) return
+      const [, kycId, docType] = match
+      fetch(`/api/kyc-doc?id=${encodeURIComponent(kycId)}&type=${encodeURIComponent(docType)}`, {
+        cache: 'no-store',
+        headers: { 'X-FXSIM-Token': token, 'Authorization': `Bearer ${token}` },
+      })
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob() })
+        .then((b) => { setBlobUrl(URL.createObjectURL(b)); setError(null) })
+        .catch((e) => setError(e?.message || 'Proxy download failed'))
+    }
 
     return (
       <div className="text-center space-y-2 py-8 text-red-400">
         <AlertTriangle className="h-8 w-8 mx-auto" />
         <p className="text-xs font-bold uppercase">Failed to load document preview</p>
         <p className="text-[11px] font-mono text-gray-400 max-w-sm mx-auto">{error || 'Unknown error'}</p>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          onClick={() => window.open(directUrl, '_blank')}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={retryViaProxy}
           className="border-red-500/30 text-xs text-red-300 hover:bg-red-500/10 gap-1.5 mt-2"
         >
           <ExternalLink className="h-3 w-3" />
-          Attempt Direct Download
+          Retry via secure proxy
         </Button>
       </div>
     )

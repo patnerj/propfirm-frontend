@@ -438,12 +438,9 @@ function DesktopLayout({
                     </button>
                   )}
 
-                  {/* Connection indicator */}
+                  {/* Connection indicator — real WS state, never hardcoded */}
                   <div className="ml-auto flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Connected</span>
-                    </div>
+                    <WsBadge />
                     <button
                       onClick={togglePos}
                       className="h-6 w-6 inline-flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-muted focus-ring"
@@ -571,6 +568,22 @@ function TabButton({ children, active, onClick }: { children: React.ReactNode; a
         />
       )}
     </button>
+  )
+}
+
+/** Live price-feed status — reflects the real WebSocket state. */
+function WsBadge() {
+  const connected = usePrices((s) => s.connected)
+  return (
+    <div className={cn(
+      'flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-md border',
+      connected
+        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+        : 'text-warn bg-warn-muted border-warn/30',
+    )}>
+      <span className={cn('w-1.5 h-1.5 rounded-full', connected ? 'bg-emerald-400 animate-pulse' : 'bg-warn animate-pulse')} />
+      <span>{connected ? 'Connected' : 'Reconnecting…'}</span>
+    </div>
   )
 }
 

@@ -2,19 +2,24 @@
 
 /**
  * Server-side proxy for KYC document fetches.
- * Called by the frontend as: GET /api/kyc-doc?id=3&type=id_doc&token=<bearer>
+ * Called by the frontend as: GET /api/kyc-doc?id=3&type=id_doc
+ * with the auth token in the `X-FXSIM-Token` / `Authorization` headers.
  *
- * Since both the browser and this API route live on demo.launchapropfirm.com,
- * there is zero CORS exposure. The backend fetch is server-to-server.
+ * SECURITY: tokens are accepted from headers only — never the query string,
+ * which leaks into browser history and access logs. The forwarded request
+ * still passes through the backend's admin RBAC, so a valid non-admin token
+ * gets 403 from upstream.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id    = searchParams.get('id')
   const type  = searchParams.get('type')
-  const token = searchParams.get('token')
+  const token =
+    req.headers.get('x-fxsim-token') ||
+    (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
 
   if (!id || !type || !token) {
-    return NextResponse.json({ error: 'Missing params' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing params or auth token' }, { status: 400 })
   }
 
   const apiBase =

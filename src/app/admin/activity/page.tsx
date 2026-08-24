@@ -11,7 +11,7 @@ import {
   Bell, Check, CheckCheck, Info, AlertCircle, AlertTriangle, 
   CheckCircle2, User, Loader2, RefreshCw, ShieldAlert, Wallet,
   Zap, DollarSign, Trophy, ArrowUpRight, Search, X, Filter,
-  MessageSquare, CreditCard, ShieldCheck, Flame
+  MessageSquare, CreditCard, ShieldCheck, Flame, ScrollText, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -20,16 +20,36 @@ import type { AdminNotification, AdminNotificationsResp } from '@/types/api'
 
 type EventCategory = 'all' | 'purchases' | 'breaches' | 'passes' | 'support'
 
+interface AuditLogRow {
+  id: number
+  admin_id: number
+  user_login?: string
+  action: string
+  target_user_id?: number | null
+  details?: string | null
+  created_at?: string
+}
+
 export default function AdminActivityPage() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [category, setCategory] = useState<EventCategory>('all')
   const [unreadOnly, setUnreadOnly] = useState(false)
+  const [logPage, setLogPage] = useState(1)
+  const [showAuditTrail, setShowAuditTrail] = useState(false)
 
   const { data, isPending, refetch } = useQuery<AdminNotificationsResp>({
     queryKey: ['admin-activity-notifications'],
     queryFn: () => api.admin.notifications().then(res => res.ok ? res.data : { notifications: [], unread_count: 0 }),
     refetchInterval: 15000 // auto-poll every 15s
+  })
+
+  // Admin audit trail — the backend logs every privileged action here.
+  const { data: auditRows, isPending: auditPending } = useQuery<AuditLogRow[]>({
+    queryKey: ['admin-audit-log', logPage],
+    queryFn: () => api.admin.log(logPage).then(res => res.ok && Array.isArray(res.data) ? res.data as AuditLogRow[] : []),
+    enabled: showAuditTrail,
+    staleTime: 15_000,
   })
 
   const rawList = data?.notifications ?? []
@@ -460,6 +480,89 @@ export default function AdminActivityPage() {
           })}
         </div>
       )}
+
+      {/* ── 4. Admin Audit Trail ────────────────────────────────────────────── */}
+      <div className="bg-[#111827] border border-[#1F2937] rounded-2xl shadow-lg">
+        <button
+          type="button"
+          onClick={() => setShowAuditTrail((v) => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <ScrollText className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Admin Audit Trail</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Every privileged action (payouts, impersonation, balance adjustments, config changes) — 100 per page.
+              </p>
+            </div>
+          </div>
+          {showAuditTrail ? <ChevronLeft className="h-4 w-4 text-gray-400 rotate-[-90deg]" /> : <ChevronRight className="h-4 w-4 text-gray-400 rotate-90" />}
+        </button>
+
+        {showAuditTrail && (
+          <div className="px-5 pb-5">
+            {auditPending ? (
+              <div className="py-10 text-center">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-400 mx-auto" />
+                <p className="text-xs text-gray-400 font-mono mt-2">Loading audit trail…</p>
+              </div>
+            ) : !auditRows || auditRows.length === 0 ? (
+              <p className="py-8 text-center text-xs text-gray-500">No audit entries recorded yet.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto rounded-xl border border-[#1F2937]">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-[#0B0F19] text-gray-400 text-left">
+                        <th className="px-3 py-2 font-semibold">When</th>
+                        <th className="px-3 py-2 font-semibold">Admin</th>
+                        <th className="px-3 py-2 font-semibold">Action</th>
+                        <th className="px-3 py-2 font-semibold">Target user</th>
+                        <th className="px-3 py-2 font-semibold">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditRows.map((row) => (
+                        <tr key={row.id} className="border-t border-[#1F2937]/60 hover:bg-[#151D2C]">
+                          <td className="px-3 py-2 font-mono text-gray-500 whitespace-nowrap">{row.created_at || '—'}</td>
+                          <td className="px-3 py-2 text-gray-200 whitespace-nowrap">{row.user_login || `#${row.admin_id}`}</td>
+                          <td className="px-3 py-2 font-mono text-purple-300 whitespace-nowrap">{row.action}</td>
+                          <td className="px-3 py-2 text-gray-300 whitespace-nowrap">{row.target_user_id ? `#${row.target_user_id}` : '—'}</td>
+                          <td className="px-3 py-2 text-gray-400 max-w-xs truncate" title={row.details || ''}>{row.details || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-gray-500 font-mono">Page {logPage}</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={logPage <= 1}
+                      onClick={() => setLogPage((p) => Math.max(1, p - 1))}
+                      className="border-[#1F2937] text-gray-300 hover:text-white hover:bg-slate-800 gap-1"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                    </Button>
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={!auditRows || auditRows.length < 100}
+                      onClick={() => setLogPage((p) => p + 1)}
+                      className="border-[#1F2937] text-gray-300 hover:text-white hover:bg-slate-800 gap-1"
+                    >
+                      Next <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   )

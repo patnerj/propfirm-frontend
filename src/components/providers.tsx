@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { ThemeLoader } from '@/components/theme-loader'
 import { ThemeContextProvider } from '@/context/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { onSessionCleared } from '@/lib/session'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const bootstrap = useAuth((s) => s.bootstrap)
@@ -28,7 +29,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     bootstrap()
     hydrateImpersonation()
-  }, [bootstrap, hydrateImpersonation])
+    // Wipe the react-query cache on logout — otherwise the next login on a
+    // shared computer can briefly see the previous user's cached data.
+    return onSessionCleared(() => queryClient.clear())
+  }, [bootstrap, hydrateImpersonation, queryClient])
 
   return (
     <QueryClientProvider client={queryClient}>

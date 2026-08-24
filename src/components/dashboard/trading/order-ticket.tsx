@@ -183,10 +183,26 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
   }, [tpN, ask, lotN, contractSize, mode, pendingType, targetN])
 
   // ── Submit ────────────────────────────────────────────────────────────
+  // Client-side free-margin gate — mirrors the server check so traders get an
+  // instant, clear rejection instead of waiting for a server error.
+  const freeMargin = account ? toNum(account.equity) - toNum(account.margin_used) : Infinity
+  const marginExceeded = Number.isFinite(freeMargin) && margin > freeMargin
+
+  const rejectIfNoMargin = (): boolean => {
+    if (marginExceeded) {
+      toast.error(
+        `Insufficient free margin: order needs ${fmtUSD(margin)}, you have ${fmtUSD(Math.max(0, freeMargin))}. Reduce the lot size or close positions.`,
+      )
+      return true
+    }
+    return false
+  }
+
   const submitMarket = async (side: 'buy' | 'sell') => {
     if (!Number.isFinite(lotN) || lotN < minLot) {
       toast.error(`Lot size must be at least ${minLot}`); return
     }
+    if (rejectIfNoMargin()) return
     if (plan?.stop_loss_required && slN === null) {
       toast.error('Stop Loss is required by your plan rules.'); return
     }
@@ -243,6 +259,7 @@ export const OrderTicket = memo(function OrderTicket({ compact, account, plan, c
     if (!Number.isFinite(lotN) || lotN < minLot) {
       toast.error(`Lot size must be at least ${minLot}`); return
     }
+    if (rejectIfNoMargin()) return
     if (plan?.stop_loss_required && slN === null) {
       toast.error('Stop Loss is required by your plan rules.'); return
     }

@@ -8,7 +8,7 @@ import {
   RefreshCw, Cpu, Zap, Radio, ShieldCheck, Power, Flame, Sparkles,
   Sliders, Save, ArrowRight, TrendingUp, AlertOctagon, Wifi, BarChart3,
   Calendar, Filter, Search, Plus, Trash2, SlidersHorizontal, Trophy, RotateCcw,
-  CheckCircle, PlayCircle, Award, Copy, Terminal, ExternalLink
+  CheckCircle, PlayCircle, Award, Copy, Terminal, ExternalLink, AlertCircle
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -214,10 +214,13 @@ export default function OperationsHubPage() {
     staleTime: 15000,
   })
 
-  // System Health Metric calculations from live report
-  const healthScore = healthReport?.score ?? 100
-  const uptimePct = healthScore >= 90 ? '99.9%' : healthScore >= 70 ? '98.5%' : '94.2%'
-  const avgLatency = healthScore >= 90 ? 14 : 45
+  // System Health Metric calculations from live report.
+  // FAIL-CLOSED: if the API is unreachable we show "unknown", never a fake
+  // healthy score — an operator must be able to trust this widget.
+  const healthUnknown = !isHealthLoading && !healthReport
+  const healthScore = healthReport?.score ?? (healthUnknown ? 0 : 100)
+  const uptimePct = healthUnknown ? '—' : healthScore >= 90 ? '99.9%' : healthScore >= 70 ? '98.5%' : '94.2%'
+  const avgLatency = healthUnknown ? 0 : healthScore >= 90 ? 14 : 45
 
   const HEALTH_KEY_CONFIG: Record<string, { name: string; category: string; icon: any }> = {
     mt5_feed: { name: 'MT5 Bridge Execution', category: 'Trading Engine', icon: Activity },
@@ -559,11 +562,11 @@ export default function OperationsHubPage() {
                     />
                   </svg>
                   <div className="absolute flex flex-col items-center justify-center text-center">
-                    <span className="text-3xl font-bold font-mono text-white tracking-tight">
-                      {healthScore}
+                    <span className={`text-3xl font-bold font-mono tracking-tight ${healthUnknown ? 'text-warn' : 'text-white'}`}>
+                      {healthUnknown ? '—' : healthScore}
                     </span>
-                    <span className="text-[10px] uppercase font-bold text-emerald-400 font-mono tracking-wider">
-                      Operational
+                    <span className={`text-[10px] uppercase font-bold font-mono tracking-wider ${healthUnknown ? 'text-warn' : 'text-emerald-400'}`}>
+                      {healthUnknown ? 'Data unavailable' : 'Operational'}
                     </span>
                   </div>
                 </div>
@@ -586,9 +589,15 @@ export default function OperationsHubPage() {
               </CardContent>
 
               <CardFooter className="pt-0 border-t border-[#1F2937]/50 text-xs text-gray-400 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> All 9 critical systems nominal
-                </span>
+                {healthUnknown ? (
+                  <span className="flex items-center gap-1.5 text-amber-400 font-medium">
+                    <AlertCircle className="h-3.5 w-3.5" /> Health API unreachable — status unknown
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> All 9 critical systems nominal
+                  </span>
+                )}
                 <span className="font-mono text-[11px] text-gray-500">Tier 4 Datacenter</span>
               </CardFooter>
             </Card>

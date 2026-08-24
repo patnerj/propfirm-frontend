@@ -38,8 +38,8 @@ export default function RegisterPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
       return
     }
     setLoading(true)
@@ -55,7 +55,7 @@ export default function RegisterPage() {
     }
   }
 
-  const pwOk = password.length >= 6
+  const pwOk = password.length >= 8
 
   return (
     <motion.div
@@ -115,15 +115,15 @@ export default function RegisterPage() {
               id="pwd"
               type="password"
               autoComplete="new-password"
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setP(e.target.value)}
               required
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters"
             />
             <div className="text-2xs flex items-center gap-1.5 text-text-muted">
               <Check className={`h-3 w-3 ${pwOk ? 'text-success' : 'text-text-faint'}`} />
-              At least 6 characters
+              At least 8 characters
             </div>
           </div>
 
